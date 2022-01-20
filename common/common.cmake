@@ -10,6 +10,8 @@ function(build_elf NAME)
             ${LINKER_SCRIPT}
             ${COMMON_PATH}/startup_msp432p401r_gcc.c
             ${COMMON_PATH}/system_msp432p401r.c
+            ${COMMON_PATH}/fw.c
+            ${COMMON_PATH}/syscalls.c
     )
 
     target_link_libraries(${NAME}.elf
