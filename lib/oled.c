@@ -260,7 +260,7 @@ void oled_ascii(OLEDCanvas canvas, I32 row, I32 col, char ascii)
     U32 ascii_index = (ascii - ' ');  // correct ascii offset
     FW_ASSERT(ascii_index < sizeof(ascii_mappings) / sizeof(ascii_mappings[0]), ascii_index);
 
-    // Copy each line of the character one at a time
+    // Copy each vertical portion of the character one at a time
     for (U32 i = 0; i < OLED_CHARACTER_HEIGHT; i++)
     {
         //                  offset to line              offset to column     offset to vertical portion of character

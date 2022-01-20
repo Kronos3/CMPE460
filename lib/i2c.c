@@ -14,6 +14,9 @@
  */
 
 
+#define SDA BIT(6)
+#define SCL BIT(7)
+
 // This function writes the RECEIVER address to the i2c bus.
 // If a RECEIVER chip is at that address, it should respond to
 // this with an "ACK".   This function returns TRUE if an
@@ -28,8 +31,10 @@ void i2c0_init(U32 listenerAddress)
     EUSCI_B0->CTLW0 |= UCSWRST;
 
     // set appropriate Port.Pins for SDA/SCL
-    ;
-    ;
+    // UCB0SDA is P1.6 on secondary function
+    // UCB0SCL is P1.7 on secondary function
+    P1->SEL0 &= ~(SDA | SCL);
+    P1->SEL1 |= SDA | SCL;
 
     // configure EUSCI_B0->CTLW0 for:
 
@@ -68,10 +73,12 @@ void i2c0_init(U32 listenerAddress)
 
     // MASTER mode
     // I2C mode
+    EUSCI_B0->CTLW0 |= UCMST | UCMODE_3;
 
     // SMCLK mode
     // don/t acknowledge
     // MASTER
+    EUSCI_B0->CTLW0 |= UCSSEL__SMCLK | UCTR;
 
     // ack normal
     // no STOP
@@ -79,58 +86,61 @@ void i2c0_init(U32 listenerAddress)
     // stay RESET
     //
     //EUSCI_B0->CTLW0
-    ;
+    EUSCI_B0->CTLW0 |= UCTXSTT; // TODO(tumbar) check this
 
     // set clock: 400 KHz
-    // EUSCI_B0->BRW
-    ;
+    EUSCI_B0->BRW = SystemCoreClock / (400000);
+
     // initialize RECEIVER address
     // EUSCI_B0->I2CSA
-    ;
+    EUSCI_B0->I2CSA = listenerAddress & 0xFF;
 
     // release reset
     // EUSCI_B0->CTLW0
-    ;
+    EUSCI_B0->CTLW0 &= ~UCSWRST;
 }
 
 void i2c0_write(const U8* data, U32 len)
 {
     // enable i2c module, (remove from RESET)
     // EUSCI_B0->CTLW0
-    ;
+    EUSCI_B0->CTLW0 &= ~UCSWRST;
 
     // generate start condition and wait for the bus
     // EUSCI_B0->CTLW0
-    ;
+    EUSCI_B0->CTLW0 |= UCTXSTT;
 
     // BIT1 of IFG reg is 0 until character has been transmitted, then changes to 1
     // wait until it changes
     // EUSCI_B0->IFG
-    ;
+    while(!(EUSCI_B0->IFG & UCTXIFG0));
 
     // write data byte by byte to i2c, use putchar
-    ;
+    for (U32 i = 0; i < len; i++)
+    {
+        i2c0_putc(data[i]);
+    }
 
     // force stop
     // EUSCI_B0->CTLW0;
-    ;
+    EUSCI_B0->CTLW0 |= UCTXSTP;
 
     // wait for transmission to complete
     // EUSCI_B0->IFG
-    ;
+    while(!(EUSCI_B0->IFG & UCTXIFG0));
 
     // transmission completed, disable the module (put it back in reset)
     //EUSCI_B0->CTLW0
-    ;
+    EUSCI_B0->CTLW0 |= UCSWRST;
 }
 
 void i2c0_putc(U8 ch)
 {
     // write data to TXBUF
     // EUSCI_B0->TXBUF
-    ;
+    EUSCI_B0->TXBUF = ch;
 
     // wait until byte is transmitted
     // EUSCI_B0->IFG
-    ;
+    while(!(EUSCI_B0->IFG & UCTXIFG0));
 }
