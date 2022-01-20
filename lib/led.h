@@ -1,6 +1,10 @@
 #ifndef CMPE460_LED_H
 #define CMPE460_LED_H
 
+#ifndef __led_LINKED__
+#error "You need to link 'led' to use this header"
+#endif
+
 typedef enum {
     LED1 = 1 << 0,
     LED1_ALL = 0x1,

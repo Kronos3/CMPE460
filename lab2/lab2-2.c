@@ -8,8 +8,7 @@ Date: 1/15/22
 All rights reserved.
 */
 
-#include<stdio.h>
-#include "uart.h"            // you will need to create this file
+#include <uart.h>
 
 //default baud rate
 #define BAUD_RATE 9600
@@ -19,31 +18,26 @@ All rights reserved.
 
 int main()
 {
-    uart0_init();
+    uart_init(UART_USB, BAUD_RATE);
 
     // write this string to the UART
-    uart0_put("\r\n IDE Lab: Instructed by Prof. Louis Beato");    /*Transmit this through UART*/
+    uart_put(UART_USB, "\r\n IDE Lab: Instructed by Prof. Louis Beato");    /*Transmit this through UART*/
 
     U32 character_count = 0;
-    char inputted_lines[CHAR_COUNT];
+    char inputted_line[CHAR_COUNT];
     while (1)
     {
-        if (character_count == 0)
-        {
-            // send carriage return/line feed to uart
-            uart0_put("\r\n");
-        }
-
-        uart0_put("input string: ");
+        // Send the prompt to the user
+        uart_put(UART_USB, "\r\ninput string: ");
 
         while (character_count < CHAR_COUNT)
         {
             // read a character from the UART
-            char ch = uart0_getchar();
-            inputted_lines[character_count++] = ch;
+            char ch = uart_getchar(UART_USB);
+            inputted_line[character_count++] = ch;
 
             // write the character to the UART
-            uart0_putchar(ch);
+            uart_putchar(UART_USB, ch);
 
             // if "RETURN" character, break
             if (ch == '\r')
@@ -53,10 +47,10 @@ int main()
         }
 
         // print the line back to the user
-        uart0_put("\r\n");
+        uart_put(UART_USB, "\r\n");
         for (U32 i = 0; i < character_count; i++)
         {
-            uart0_putchar(inputted_lines[i]);
+            uart_putchar(UART_USB, inputted_line[i]);
         }
 
         // reset character count

@@ -15,17 +15,10 @@ function(build_elf NAME)
     )
 
     target_link_libraries(${NAME}.elf
-            :ti/display/lib/display.am4fg
-            :ti/grlib/lib/gcc/m4f/grlib.a
-            :third_party/spiffs/lib/gcc/m4f/spiffs.a
-            :ti/drivers/lib/drivers_msp432p401x.am4fg
-            :third_party/fatfs/lib/gcc/m4f/fatfs.a
-            :ti/devices/msp432p4xx/driverlib/gcc/msp432p4xx_driverlib.a
-
-            gcc
-            c
-            m
-            nosys
+            gcc     # gcc runtime library
+            c       # libc (standard C library)
+            m       # math
+            nosys   # don't automatically link libc
     )
 
     set(HEX_FILE ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.hex)
@@ -38,5 +31,4 @@ function(build_elf NAME)
 
     target_link_options(${NAME}.elf PRIVATE
             "-Wl,-Map,${CMAKE_CURRENT_BINARY_DIR}/${NAME}.map")
-
 endfunction()

@@ -3,6 +3,10 @@
 
 #include <fw.h>
 
+#ifndef __uart_LINKED__
+#error "You need to link 'uart' to use this header"
+#endif
+
 typedef enum {
     UART_USB,
     UART_BT,

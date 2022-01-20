@@ -8,7 +8,7 @@ Date: 1/19/22
 All rights reserved.
 */
 
-#include "uart.h"
+#include <uart.h>
 
 #define BUF_SIZE 64
 #define BAUD_RATE 9600
@@ -33,6 +33,9 @@ int main()
                 char ch = uart_getchar(uart);
                 if (ch == '\r' || ch == '\n') // handle all CR, LF and CRLF line endings
                 {
+                    // Don't send an empty string
+                    if (uart_pos[uart] == 0) continue;
+
                     // End of line
                     if (uart == UART_USB) uart_put(UART_USB, "\r\n");
 
