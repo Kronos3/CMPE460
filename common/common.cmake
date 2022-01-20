@@ -5,7 +5,7 @@ function(build_elf NAME)
     set(SOURCES ${ARGV})
     LIST(REMOVE_AT SOURCES 0)
     add_executable(
-            ${NAME}.elf
+            ${NAME}
             ${SOURCES}
             ${LINKER_SCRIPT}
             ${COMMON_PATH}/startup_msp432p401r_gcc.c
@@ -14,7 +14,7 @@ function(build_elf NAME)
             ${COMMON_PATH}/syscalls.c
     )
 
-    target_link_libraries(${NAME}.elf
+    target_link_libraries(${NAME}
             gcc     # gcc runtime library
             c       # libc (standard C library)
             m       # math
@@ -24,11 +24,11 @@ function(build_elf NAME)
     set(HEX_FILE ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.hex)
     set(BIN_FILE ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.bin)
 
-    add_custom_command(TARGET ${NAME}.elf POST_BUILD
-            COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${NAME}.elf> ${HEX_FILE}
-            COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${NAME}.elf> ${BIN_FILE}
+    add_custom_command(TARGET ${NAME} POST_BUILD
+            COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${NAME}> ${HEX_FILE}
+            COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${NAME}> ${BIN_FILE}
             COMMENT "Building ${HEX_FILE}\nBuilding ${BIN_FILE}")
 
-    target_link_options(${NAME}.elf PRIVATE
+    target_link_options(${NAME} PRIVATE
             "-Wl,-Map,${CMAKE_CURRENT_BINARY_DIR}/${NAME}.map")
 endfunction()
