@@ -6,3 +6,6 @@ endfunction()
 
 gen_library(uart uart.c uart.h)
 gen_library(led led.c led.h)
+gen_library(i2c i2c.c i2c.h)
+gen_library(oled oled.c oled.h)
+target_link_libraries(oled i2c)

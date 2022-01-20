@@ -28,6 +28,8 @@ typedef enum
 #define COMPILE_ASSERT(expr, name) typedef char __compile_assert_##name[(expr) ? 0 : -1]
 
 #define ABS(x) ((x) < 0) ? (-(x)) : (x)
+#define MIN(a, b) ((a) < (b)) ? (a) : (b)
+#define MAX(a, b) ((a) > (b)) ? (a) : (b)
 
 /**
  * Handle assertion failures
