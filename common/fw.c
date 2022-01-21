@@ -1,8 +1,7 @@
-
-#include <stdio.h>
 #include <stdarg.h>
 #include <fw.h>
 #include <uartlib.h>
+#include <arm.h>
 
 I32 nop_handler(const char* fmt, ...)
 {
@@ -21,9 +20,9 @@ void fw_assertion_failure(const char* file, U32 line,
 {
     // Mask all interrupts
     // Assertion reached, nothing else should run
-    __asm__ ("CPSID I");
+    DISABLE_INTERRUPTS();
 
-    uprintf("Assertion failed %s:%lu : (%s)",
+    uprintf("Assertion failed %s:%u : (%s)",
             file, line, expr_str);
 
     va_list args;
@@ -36,7 +35,7 @@ void fw_assertion_failure(const char* file, U32 line,
     uprintf("\r\n");
 
     // Hang Mr. CPU please
-    __asm__("BKPT");
+    BREAKPOINT(); // break point if we are in a debugger
     while (1)
     {
     }
