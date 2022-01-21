@@ -3,7 +3,8 @@
 #include <arm.h>
 #include <nvic.h>
 
-static struct Timer32 {
+static struct Timer32
+{
     TimTask task;
     Timer32_Type* const timer;
     U32 arr;
@@ -12,6 +13,9 @@ static struct Timer32 {
         {NULL, TIMER32_1, 0, 1 << 25},
         {NULL, TIMER32_2, 0, 1 << 26},
 };
+
+static U32 systick_counter = 0;
+static TimTask systick_task = NULL;
 
 void tim32_init(tim32_t timer,
                 TimTask task,
@@ -38,7 +42,7 @@ void tim32_init(tim32_t timer,
             TIMER32_CONTROL_SIZE;
 
     // Select timer mode
-    switch(mode)
+    switch (mode)
     {
         case TIM32_MODE_PERIODIC:
             t->timer->CONTROL &= ~TIMER32_CONTROL_ONESHOT;
@@ -51,7 +55,7 @@ void tim32_init(tim32_t timer,
     }
 
     // Select prescaler
-    switch(psc)
+    switch (psc)
     {
         case TIM32_PSC_1:
             t->timer->CONTROL =
@@ -90,8 +94,7 @@ t32_int_common(tim32_t t)
     timer32_table[t].timer->INTCLR = 1;
 
     // Execute user task
-    FW_ASSERT(timer32_table[t].task && "No task provided", t);
-    timer32_table[t].task(t);
+    if (timer32_table[t].task) timer32_table[t].task();
 }
 
 void T32_INT1_IRQHandler(void)
@@ -104,9 +107,9 @@ void T32_INT2_IRQHandler(void)
     t32_int_common(TIM32_2);
 }
 
-U32 tim_calculate_arr(tim32_psc_t prescaler, F64 hz)
+U32 tim_calculate_arr(U32 prescaler, F64 hz)
 {
-    return (U32) (((F64)SystemCoreClock / (F64)prescaler) / hz);
+    return (U32) (((F64) SystemCoreClock / (F64) prescaler) / hz);
 }
 
 void tim32_set(tim32_t timer, bool_t enabled)
@@ -125,4 +128,56 @@ void tim32_reset(tim32_t timer)
     FW_ASSERT(timer < TIM32_N, timer);
     struct Timer32* t = &timer32_table[timer];
     t->timer->LOAD = t->arr;
+}
+
+void tim_systick_set(bool_t enabled)
+{
+    if (enabled)
+    {
+        SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
+    }
+    else
+    {
+        SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
+    }
+}
+
+void tim_systick_init(TimTask task, U32 arr)
+{
+    DISABLE_INTERRUPTS();
+
+    tim_systick_set(FALSE);
+
+    systick_task = task;
+
+    // Set the period of the systick
+    SysTick->LOAD = arr - 1;
+
+    // Clear the current systick
+    SysTick->VAL = 0;
+
+    SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk;
+
+    // priority 2
+    // SCB_SHPR3
+    // 31-24 PRI_15 R/W 0h Priority of system handler 15.
+    // 23-16 PRI_14 R/W 0h Priority of system handler 14.
+    // 15-8 PRI_13 R/W 0h Priority of system handler 13.
+    // 7-0 PRI_12 R/W 0h Priority of system handler 12
+    SCB_SHPR3 = (SCB_SHPR3 & 0x00FFFFFF) | 0x40000000;
+
+    tim_systick_set(TRUE);
+
+    ENABLE_INTERRUPTS();
+}
+
+void SysTick_Handler(void)
+{
+    systick_counter++;
+    if (systick_task) systick_task();
+}
+
+U32 tim_systick_get(void)
+{
+    return systick_counter;
 }

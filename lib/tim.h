@@ -14,7 +14,7 @@ typedef enum
     TIM32_N,
 } tim32_t;
 
-typedef void (*TimTask)(tim32_t timer);
+typedef void (*TimTask)(void);
 
 typedef enum
 {
@@ -60,7 +60,7 @@ void tim32_init(tim32_t timer,
  * @param hz interrupt rate per second
  * @return calculated load/arr value for timer
  */
-U32 tim_calculate_arr(tim32_psc_t psc, F64 hz);
+U32 tim_calculate_arr(U32 psc, F64 hz);
 
 /**
  * Start a timer
@@ -76,5 +76,25 @@ void tim32_set(tim32_t timer, bool_t enabled);
  * @param timer timer to reset
  */
 void tim32_reset(tim32_t timer);
+
+/**
+ * Initialize the systick timer to call a function
+ * on every interrupt
+ * @param task task to run
+ * @param arr timer period (no prescaller)
+ */
+void tim_systick_init(TimTask task, U32 arr);
+
+/**
+ * Enable or disable the SYSTICK timer
+ * @param enabled TRUE to enable, FALSE to disable
+ */
+void tim_systick_set(bool_t enabled);
+
+/**
+ * Get the current systick timer value
+ * @return value of the systick counter
+ */
+U32 tim_systick_get(void);
 
 #endif //CMPE460_TIM_H

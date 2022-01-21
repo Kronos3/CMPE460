@@ -43,9 +43,8 @@ void PORT1_IRQHandler(void)
     switch_clear_interrupt(switch_get_interrupt());
 }
 
-static void timer1_task(tim32_t t)
+static void timer1_task(void)
 {
-    (void) t;
     static U32 led_status = 0;
     led_status++;
     if (led_status % 2 == 0)
@@ -58,10 +57,8 @@ static void timer1_task(tim32_t t)
     }
 }
 
-static void timer2_task(tim32_t t)
+static void timer2_task(void)
 {
-    (void) t;
-
     static U32 i = 0;
     const static U32 colors[] = {
             LED2_RED, // r
@@ -96,5 +93,6 @@ int main(void)
                TIM32_MODE_PERIODIC);
     switch_init(SWITCH_ALL, SWITCH_INT_PRESS);
 
+    // Let the interrupts do all the work
     while(1);
 }
