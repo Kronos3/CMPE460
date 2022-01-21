@@ -151,8 +151,7 @@ char* uart_getline(uart_t id, char buf[], U32 len)
                 continue;
             }
 
-            const char* b = "\b \b"; // backspace
-            uart_write(id, b, 3);
+            uart_write(id, "\b \b", 3); // backspace, clear last, delete space
             i--; // remove the DEL character
             i--; // Delete the last inputted character
         }

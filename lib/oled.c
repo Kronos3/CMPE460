@@ -33,6 +33,7 @@ typedef enum
     SSD1306_SCROLL_VERT_RIGHT = 0x29,
     SSD1306_SCROLL_VERT_LEFT = 0x2A,
     SSD1306_SET_VERTICAL = 0xA3,
+    SSD1306_SCROLL_DISABLE = 0x2E,
 
 // address setting
     SSD1306_SETLOWCOLUMN = 0x00,
@@ -62,6 +63,7 @@ typedef enum
 // power supply configuration
     SSD1306_CHARGEPUMP = 0x8D,
     SSD1306_EXTERNALVCC = 0x10,
+    SSD1306_INTERNALVCC = 0x14,
     SSD1306_SWITCHCAPVCC = 0x20,
 } oled_cmd_t;
 
@@ -123,7 +125,7 @@ void oled_init(void)
 
     oled_send_command(SSD1306_CHARGEPUMP);  // Set Charge Pump
 
-    oled_send_command(SSD1306_EXTERNALVCC);  // Vcc external
+    oled_send_command(SSD1306_INTERNALVCC);  // Vcc internal
 
     oled_send_command(SSD1306_SETLOWCOLUMN);  // Set Lower Column Start Address
 
@@ -145,12 +147,11 @@ void oled_init(void)
     oled_send_command(0x00);
     oled_send_command(0x07);
 
-    // TODO(tumbar) define this in enum
-    oled_send_command(0x2E);  // Deactivate Scroll
+    oled_send_command(SSD1306_SCROLL_DISABLE);  // Deactivate Scroll
     oled_display_on();
 
     // Clear the display
-    OLEDCanvas c = {0};
+    const OLEDCanvas c = {0};
     oled_draw(c);
     oled_display_on();
 }
@@ -264,7 +265,7 @@ void oled_ascii(OLEDCanvas canvas, I32 row, I32 col, char ascii)
     for (U32 i = 0; i < OLED_CHARACTER_HEIGHT; i++)
     {
         //                  offset to line              offset to column     offset to vertical portion of character
-        memcpy(canvas + (row * OLED_LINE_LENGTH) + (col * OLED_CHARACTER_WIDTH) + (i * OLED_WIDTH),
+        memcpy(canvas + (row * (OLED_LINE_SIZE)) + (col * OLED_CHARACTER_WIDTH) + (i * OLED_WIDTH),
                // Grab the portion of the character we want
                ascii_mappings[ascii_index] + (i * OLED_CHARACTER_WIDTH),
                OLED_CHARACTER_WIDTH);
@@ -276,7 +277,7 @@ void oled_line(OLEDCanvas canvas, I32 row, I32 col, const char* ascii_str)
     for (I32 i = 0; i < OLED_LINE_LENGTH; i++)
     {
         // Exit early if the string ends
-        if (!ascii_str[0]) break;
+        if (!ascii_str[i]) break;
 
         oled_ascii(canvas, row, col++, ascii_str[i]);
     }
@@ -284,8 +285,7 @@ void oled_line(OLEDCanvas canvas, I32 row, I32 col, const char* ascii_str)
 
 void oled_display_off(void)
 {
-    // TODO(tumbar) Look at this (its wrong)
-    oled_send_command(0xA5);
+    oled_send_command(SSD1306_DISPLAYOFF);
 }
 
 void oled_display_on(void)
@@ -295,7 +295,7 @@ void oled_display_on(void)
 
 void oled_print(TextCanvas* tcanvas, const char* str)
 {
-    if (tcanvas->current_line + 1 >= OLED_LINE_MAX)
+    if (tcanvas->current_line + 1 > OLED_LINE_MAX)
     {
         if (tcanvas->scroll)
         {

@@ -67,6 +67,6 @@ void led_set(led_t mask)
 
 void led_off(led_t mask)
 {
-    LED1->OUT &= ~((mask >> LED1_SHIFT) & LED2_ALL);
+    LED1->OUT &= ~((mask >> LED1_SHIFT) & LED1_ALL);
     LED2->OUT &= ~((mask >> LED2_SHIFT) & LED2_ALL);
 }
