@@ -3,6 +3,10 @@
 
 #include <fw.h>
 
+#ifndef __i2c_LINKED__
+#error "You need to link 'i2c' to use this header"
+#endif
+
 /**
  * Initialize an I2C device with a certain address
  * @param listenerAddress I2C slave address

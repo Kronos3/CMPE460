@@ -1,72 +1,53 @@
 #include <msp.h>
-#include "led.h"
-#include <fw.h>
+#include <led.h>
 
 // LED1 is on pin 1.0
 #define LED1 (P1)
-#define LED1_PIN (0)
 
 // LED2 has three different LEDs
 #define LED2 (P2)
-#define LED2_RED_PIN (0)
-#define LED2_GREEN_PIN (1)
-#define LED2_BLUE_PIN (2)
 
-static void LED1_Init(void)
+// Extract the pin bits for a certain port given the front end ID
+#define PIN_SEL(mask, p) (((mask) & LED##p##_ALL) >> LED##p##_SHIFT)
+
+#define LED_INIT_M(P, PINS) \
+do {                           \
+    /* General purpose pin mode */ \
+    (P)->SEL0 &= ~(PINS); \
+    (P)->SEL1 &= ~(PINS); \
+\
+    /* make built-in LEDs high drive strength */ \
+    (P)->DS |= (PINS); \
+\
+    /* make built-in pin output */ \
+    (P)->DIR |= (PINS); \
+ \
+    /* turn off LED */ \
+    (P)->OUT &= ~(PINS); \
+} while(0)
+
+void led_init(led_t led)
 {
-    // configure PortPin for LED1 as port I/O
-    // set P1.0 as output
-    LED1->SEL0 &= ~BIT(LED1_PIN);
-    LED1->SEL1 &= ~BIT(LED1_PIN);
-
-    // make built-in LED1 LED high drive strength
-    LED1->DS |= BIT(LED1_PIN);
-
-    // make built-in LED1 out
-    LED1->DIR |= BIT(LED1_PIN);
-
-    // turn off LED
-    LED1->OUT &= ~BIT(LED1_PIN);
-}
-
-static void LED2_Init(void)
-{
-    // configure PortPin for LED2 as port I/O
-    U32 all_pins = BIT(LED2_RED_PIN) | BIT(LED2_GREEN_PIN) | BIT(LED2_BLUE_PIN);
-    LED2->SEL0 &= ~all_pins;
-    LED2->SEL1 &= ~all_pins;
-
-    // make built-in LED2 LEDs high drive strength
-    LED2->DS |= all_pins;
-
-    // make built-in LED2 out
-    LED2->DIR |= all_pins;
-
-    // turn off LED
-    LED2->OUT &= ~(all_pins);
-}
-
-void led_init(void)
-{
-    LED1_Init();
-    LED2_Init();
+    // Initialize all selected LEDs on their respective ports
+    LED_INIT_M(LED1, PIN_SEL(led, 1));
+    LED_INIT_M(LED2, PIN_SEL(led, 2));
 }
 
 void led_on(led_t mask)
 {
-    LED1->OUT |= (mask >> LED1_SHIFT) & LED1_ALL;
-    LED2->OUT |= (mask >> LED2_SHIFT) & LED2_ALL;
+    LED1->OUT |= PIN_SEL(mask, 1);
+    LED2->OUT |= PIN_SEL(mask, 2);
 }
 
 void led_set(led_t mask)
 {
     // Set only the bits on the port to the required values
-    LED1->OUT = (LED1->OUT & ~LED1_ALL) | ((mask >> LED1_SHIFT) & LED1_ALL);
-    LED2->OUT = (LED2->OUT & ~LED2_ALL) | ((mask >> LED2_SHIFT) & LED2_ALL);
+    LED1->OUT = (LED1->OUT & ~(LED1_ALL >> LED1_SHIFT)) | PIN_SEL(mask, 1);
+    LED2->OUT = (LED2->OUT & ~(LED2_ALL >> LED2_SHIFT)) | PIN_SEL(mask, 2);
 }
 
 void led_off(led_t mask)
 {
-    LED1->OUT &= ~((mask >> LED1_SHIFT) & LED1_ALL);
-    LED2->OUT &= ~((mask >> LED2_SHIFT) & LED2_ALL);
+    LED1->OUT &= ~PIN_SEL(mask, 1);
+    LED2->OUT &= ~PIN_SEL(mask, 2);
 }
