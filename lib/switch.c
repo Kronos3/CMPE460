@@ -5,6 +5,8 @@
 
 #define USR_BTN (P1)
 
+static switch_t interrupts_initialized = 0;
+
 void switch_init(switch_t switches, bool_t enable_interrupts)
 {
     // configure PortPin for Switch 1 and Switch2 as port I/O
@@ -21,6 +23,8 @@ void switch_init(switch_t switches, bool_t enable_interrupts)
     if (enable_interrupts)
     {
         DISABLE_INTERRUPTS();
+
+        interrupts_initialized |= switches;
 
         //7-0 PxIFG RW 0h Port X interrupt flag
         //0b = No interrupt is pending.
@@ -64,5 +68,5 @@ void switch_clear_interrupt(switch_t switches)
 
 switch_t switch_get_interrupt(void)
 {
-    return P1->IFG & SWITCH_ALL;
+    return P1->IFG & interrupts_initialized;
 }

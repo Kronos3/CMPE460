@@ -1,2 +1,2 @@
 build_elf(lab5-1 lab5-1.c)
-target_link_libraries(lab5-1 switch uart led)
+target_link_libraries(lab5-1 switch uartlib led)
