@@ -118,3 +118,11 @@ void tim32_set(tim32_t timer, bool_t enabled)
     if (enabled) t->timer->CONTROL |= TIMER32_CONTROL_ENABLE;
     else t->timer->CONTROL &= ~TIMER32_CONTROL_ENABLE;
 }
+
+void tim32_reset(tim32_t timer)
+{
+    // Make sure a TIM32 was selected
+    FW_ASSERT(timer < TIM32_N, timer);
+    struct Timer32* t = &timer32_table[timer];
+    t->timer->LOAD = t->arr;
+}

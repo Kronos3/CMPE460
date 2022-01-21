@@ -7,7 +7,7 @@
 
 static switch_t interrupts_initialized = 0;
 
-void switch_init(switch_t switches, bool_t enable_interrupts)
+void switch_init(switch_t switches, switch_int_t switch_interrupt)
 {
     // configure PortPin for Switch 1 and Switch2 as port I/O
     USR_BTN->SEL0 &= ~switches;
@@ -20,7 +20,7 @@ void switch_init(switch_t switches, bool_t enable_interrupts)
     USR_BTN->REN |= switches;
     USR_BTN->OUT |= switches;
 
-    if (enable_interrupts)
+    if (switch_interrupt != SWITCH_INT_NONE)
     {
         DISABLE_INTERRUPTS();
 
@@ -43,7 +43,17 @@ void switch_init(switch_t switches, bool_t enable_interrupts)
         //1b = PxIFG flag is set with a high-to-low transition
         // now set the pin to cause falling edge interrupt event
         // P1.1 is falling edge event
-        P1->IES |= switches;
+        switch(switch_interrupt)
+        {
+            case SWITCH_INT_PRESS:
+                P1->IES |= switches;
+                break;
+            case SWITCH_INT_RELEASE:
+                P1->IES &= ~switches;
+                break;
+            default:
+                FW_ASSERT(0 && "Invalid switch interrupt mode", switch_interrupt);
+        }
 
         // now set the pin to cause falling edge interrupt event
         NVIC_IPR8 = (NVIC_IPR8 & 0x00FFFFFF) | 0x40000000; // priority 2

@@ -69,4 +69,12 @@ U32 tim_calculate_arr(tim32_psc_t psc, F64 hz);
  */
 void tim32_set(tim32_t timer, bool_t enabled);
 
+/**
+ * Reset the timer32 by reloading the LOAD register
+ * If the timer is running it will restart, otherwise it will
+ * simply reset and wait for an enable signal
+ * @param timer timer to reset
+ */
+void tim32_reset(tim32_t timer);
+
 #endif //CMPE460_TIM_H

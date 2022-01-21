@@ -39,10 +39,15 @@ void led_on(led_t mask)
     LED2->OUT |= PIN_SEL(mask, 2);
 }
 
-void led_set(led_t mask)
+void led1_set(led_t mask)
 {
     // Set only the bits on the port to the required values
     LED1->OUT = (LED1->OUT & ~(LED1_ALL >> LED1_SHIFT)) | PIN_SEL(mask, 1);
+}
+
+void led2_set(led_t mask)
+{
+    // Set only the bits on the port to the required values
     LED2->OUT = (LED2->OUT & ~(LED2_ALL >> LED2_SHIFT)) | PIN_SEL(mask, 2);
 }
 

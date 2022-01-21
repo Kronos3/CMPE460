@@ -40,7 +40,8 @@ void led_on(led_t mask);
  * Turn on or OFF leds respecting all bits in the mask
  * @param mask LED mask
  */
-void led_set(led_t mask);
+void led1_set(led_t mask);
+void led2_set(led_t mask);
 
 /**
  * Turn on a set of leds

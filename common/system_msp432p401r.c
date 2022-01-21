@@ -68,7 +68,9 @@
 //     <12000000> 12 MHz
 //     <24000000> 24 MHz
 //     <48000000> 48 MHz
+#ifndef __SYSTEM_CLOCK
 #define  __SYSTEM_CLOCK    3000000
+#endif
 
 /*--------------------- Power Regulator Configuration -----------------------*/
 //  Power Regulator Mode
@@ -394,6 +396,8 @@ void SystemInit(void)
     // Set Flash Bank read buffering
     FLCTL->BANK0_RDCTL = FLCTL->BANK0_RDCTL | (FLCTL_BANK0_RDCTL_BUFD | FLCTL_BANK0_RDCTL_BUFI);
     FLCTL->BANK1_RDCTL = FLCTL->BANK1_RDCTL | (FLCTL_BANK1_RDCTL_BUFD | FLCTL_BANK1_RDCTL_BUFI);
+    #else
+    #error "Invalid system clock"
     #endif
 
 }

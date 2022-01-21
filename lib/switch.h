@@ -15,14 +15,21 @@ typedef enum
     SWITCH_ALL = SWITCH_1 | SWITCH_2
 } switch_t;
 
+typedef enum
+{
+    SWITCH_INT_NONE,
+    SWITCH_INT_PRESS,
+    SWITCH_INT_RELEASE,
+} switch_int_t;
+
 /**
  * Initialize both switches on the MSP432 board
  * @param switches Mask of switches you want to initialize
- * @param enable_interrupts Enable interrupts when buttons are pressed
+ * @param switch_interrupt Enable interrupts when buttons are pressed or released or none
  *                          (override the default handler for the interrupt)
  *                          PORT1_IRQHandler weak reference and can be overridden
  */
-void switch_init(switch_t switches, bool_t enable_interrupts);
+void switch_init(switch_t switches, switch_int_t switch_interrupt);
 
 /**
  * Clear the interrupt signal of the button press
