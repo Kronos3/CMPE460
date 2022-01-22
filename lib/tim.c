@@ -3,9 +3,11 @@
 #include <arm.h>
 #include <nvic.h>
 
+#define TIM32_N (2)
+
 static struct Timer32
 {
-    TimTask task;
+    void (* task)(void);
     Timer32_Type* const timer;
     U32 arr;
     const U32 interrupt_nvic;
@@ -15,10 +17,11 @@ static struct Timer32
 };
 
 static U32 systick_counter = 0;
-static TimTask systick_task = NULL;
+
+static void (* systick_task)(void) = NULL;
 
 void tim32_init(tim32_t timer,
-                TimTask task,
+                void (* task)(void),
                 U32 arr,
                 tim32_psc_t psc,
                 tim32_mode_t mode)
@@ -142,7 +145,7 @@ void tim_systick_set(bool_t enabled)
     }
 }
 
-void tim_systick_init(TimTask task, U32 arr)
+void tim_systick_init(void (* task)(void), U32 arr)
 {
     DISABLE_INTERRUPTS();
 

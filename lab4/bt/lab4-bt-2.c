@@ -18,7 +18,7 @@ int main()
     uart_init(UART_USB, BAUD_RATE);
     uart_init(UART_BT, BAUD_RATE);
 
-    led_init();
+    led_init(LED2_ALL);
 
     uart_put(UART_BT, "READY\r\n");
     uart_put(UART_USB, "READY\r\n");
@@ -60,7 +60,7 @@ int main()
             };
 
             // Set the color on the LED
-            led_set(lights[input]);
+            led2_set(lights[input]);
 
             // Tell the UART which color it is
             uart_put(device_with_data, light_name[input]);

@@ -6,8 +6,11 @@
 #define USR_BTN (P1)
 
 static switch_t interrupts_initialized = 0;
+static void (*tasks[2])(void) = {NULL, NULL};
 
-void switch_init(switch_t switches, switch_int_t switch_interrupt)
+void switch_init(switch_t switches,
+                 switch_int_t switch_interrupt,
+                 void (*task)(void))
 {
     // configure PortPin for Switch 1 and Switch2 as port I/O
     USR_BTN->SEL0 &= ~switches;
@@ -25,6 +28,16 @@ void switch_init(switch_t switches, switch_int_t switch_interrupt)
         DISABLE_INTERRUPTS();
 
         interrupts_initialized |= switches;
+
+        if (switches & SWITCH_1)
+        {
+            tasks[0] = task;
+        }
+
+        if (switches & SWITCH_2)
+        {
+            tasks[1] = task;
+        }
 
         //7-0 PxIFG RW 0h Port X interrupt flag
         //0b = No interrupt is pending.
@@ -79,4 +92,21 @@ void switch_clear_interrupt(switch_t switches)
 switch_t switch_get_interrupt(void)
 {
     return P1->IFG & interrupts_initialized;
+}
+
+void PORT1_IRQHandler(void)
+{
+    U32 who = switch_get_interrupt();
+    if ((who & SWITCH_1) && tasks[0])
+    {
+        tasks[0]();
+    }
+
+    if ((who & SWITCH_2) && tasks[1])
+    {
+        tasks[1]();
+    }
+
+    // Clear all switch interrupts
+    switch_clear_interrupt(who);
 }

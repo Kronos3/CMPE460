@@ -6,41 +6,30 @@
 // Override the weak reference default handler
 static U32 timer_counter_ms = 0;
 static bool_t timer_running = FALSE;
-void PORT1_IRQHandler(void)
-{
-    switch(switch_get_interrupt())
-    {
-        case SWITCH_1:
-        {
-            static bool_t timer_enabled = FALSE;
-            timer_enabled = !timer_enabled;
-            tim32_reset(TIM32_1);
-            tim32_set(TIM32_1, timer_enabled);
-        }
-            break;
-        case SWITCH_2:
-        {
-            if (timer_running)
-            {
-                timer_running = FALSE;
-                tim32_set(TIM32_2, FALSE);
-                uprintf("Timer ran for %d ms\r\n", timer_counter_ms);
-            }
-            else
-            {
-                timer_running = TRUE;
-                timer_counter_ms = 0;
-                tim32_reset(TIM32_2);
-                tim32_set(TIM32_2, TRUE);
-            }
-        }
-            break;
-        default:
-            break;
-    }
 
-    // Clear all switch interrupts
-    switch_clear_interrupt(switch_get_interrupt());
+static void switch_1_handler(void)
+{
+    static bool_t timer_enabled = FALSE;
+    timer_enabled = !timer_enabled;
+    tim32_reset(TIM32_1);
+    tim32_set(TIM32_1, timer_enabled);
+}
+
+static void switch_2_handler(void)
+{
+    if (timer_running)
+    {
+        timer_running = FALSE;
+        tim32_set(TIM32_2, FALSE);
+        uprintf("Timer ran for %d ms\r\n", timer_counter_ms);
+    }
+    else
+    {
+        timer_running = TRUE;
+        timer_counter_ms = 0;
+        tim32_reset(TIM32_2);
+        tim32_set(TIM32_2, TRUE);
+    }
 }
 
 static void timer1_task(void)
@@ -91,8 +80,7 @@ int main(void)
                tim_calculate_arr(TIM32_PSC_1, 1000.0), // trigger 1ms
                TIM32_PSC_1,
                TIM32_MODE_PERIODIC);
-    switch_init(SWITCH_ALL, SWITCH_INT_PRESS);
 
-    // Let the interrupts do all the work
-    while(1);
+    switch_init(SWITCH_1, SWITCH_INT_PRESS, switch_1_handler);
+    switch_init(SWITCH_2, SWITCH_INT_PRESS, switch_2_handler);
 }

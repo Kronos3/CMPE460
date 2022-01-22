@@ -11,10 +11,7 @@ typedef enum
 {
     TIM32_1,
     TIM32_2,
-    TIM32_N,
 } tim32_t;
-
-typedef void (*TimTask)(void);
 
 typedef enum
 {
@@ -48,7 +45,7 @@ typedef enum
  * @param psc prescaler (clock divider)
  */
 void tim32_init(tim32_t timer,
-                TimTask task,
+                void (*task)(void),
                 U32 arr,
                 tim32_psc_t psc,
                 tim32_mode_t mode);
@@ -83,7 +80,7 @@ void tim32_reset(tim32_t timer);
  * @param task task to run
  * @param arr timer period (no prescaller)
  */
-void tim_systick_init(TimTask task, U32 arr);
+void tim_systick_init(void (*task)(void), U32 arr);
 
 /**
  * Enable or disable the SYSTICK timer

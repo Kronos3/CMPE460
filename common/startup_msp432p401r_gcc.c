@@ -35,6 +35,7 @@
 *****************************************************************************/
 
 #include <stdint.h>
+#include <arm.h>
 
 /* Entry point for the application. */
 extern int _mainCRTStartup();
@@ -197,6 +198,12 @@ void Reset_Handler(void)
 
     /* Jump to the main initialization routine. */
     _mainCRTStartup();
+
+    // Hang the system forever
+    while(1)
+    {
+        WAIT_FOR_INTERRUPT();
+    }
 }
 
 /* This is the code that gets called when the processor receives an unexpected  */

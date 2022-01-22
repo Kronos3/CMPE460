@@ -11,8 +11,4 @@ int main()
     oled_print(&t, "line 3");
     oled_print(&t, "line 4");
     oled_print(&t, "hello again");
-
-    while(1)
-    {
-    }
 }

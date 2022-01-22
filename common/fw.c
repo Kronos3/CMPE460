@@ -1,6 +1,5 @@
 #include <stdarg.h>
 #include <fw.h>
-#include <uartlib.h>
 #include <arm.h>
 
 I32 nop_handler(const char* fmt, ...)
@@ -12,6 +11,8 @@ I32 nop_handler(const char* fmt, ...)
 
 #ifndef __uartlib_LINKED__
 extern I32 uprintf(const char* fmt, ...) __attribute__((weak,alias("nop_handler")));
+#else
+#include <uartlib.h>
 #endif
 
 void fw_assertion_failure(const char* file, U32 line,
@@ -38,5 +39,8 @@ void fw_assertion_failure(const char* file, U32 line,
     BREAKPOINT(); // break point if we are in a debugger
     while (1)
     {
+        WAIT_FOR_INTERRUPT();
+        // spoilers: it will never come because we masked all interrupts)
+        // places the CPU in low power state until reset
     }
 }

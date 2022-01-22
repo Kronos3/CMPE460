@@ -28,8 +28,11 @@ typedef enum
  * @param switch_interrupt Enable interrupts when buttons are pressed or released or none
  *                          (override the default handler for the interrupt)
  *                          PORT1_IRQHandler weak reference and can be overridden
+ * @param task function to run when interrupt is reached
  */
-void switch_init(switch_t switches, switch_int_t switch_interrupt);
+void switch_init(switch_t switches,
+                 switch_int_t switch_interrupt,
+                 void (*task)(void));
 
 /**
  * Clear the interrupt signal of the button press
