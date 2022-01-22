@@ -67,17 +67,17 @@ static inline void uart_put_floating(uart_t uart, double f)
     }
 }
 
-static inline void uart_put_hex(uart_t uart, int i, char base_hex_a)
+static inline void uart_put_hex(uart_t uart, U32 i, bool_t lower_case)
 {
-    // TODO(tumbar) Make this not shitty
-    uart_putchar(uart, base_hex_a + ((i & 0xF0000000) >> 28));
-    uart_putchar(uart, base_hex_a + ((i & 0x0F000000) >> 24));
-    uart_putchar(uart, base_hex_a + ((i & 0x00F00000) >> 20));
-    uart_putchar(uart, base_hex_a + ((i & 0x000F0000) >> 16));
-    uart_putchar(uart, base_hex_a + ((i & 0x0000F000) >> 12));
-    uart_putchar(uart, base_hex_a + ((i & 0x00000F00) >> 8));
-    uart_putchar(uart, base_hex_a + ((i & 0x000000F0) >> 4));
-    uart_putchar(uart, base_hex_a + ((i & 0x0000000F) >> 0));
+    static const char hex_mappings_l[] = "0123456789abcdef";
+    static const char hex_mappings_u[] = "0123456789ABCDEF";
+    const char* hex_mappings = lower_case ? hex_mappings_l : hex_mappings_u;
+
+    for (U32 j = 0; j < 8; j++)
+    {
+        U32 shift_amt = ((7 - j) * 4);
+        uart_putchar(uart, hex_mappings[(i >> shift_amt) & 0xF]);
+    }
 }
 
 I32 uvfprintf(
@@ -110,10 +110,10 @@ I32 uvfprintf(
                     uart_put_udec(uart, va_arg(args, unsigned), pad_char, pad_amt);
                     break;
                 case 'x':
-                    uart_put_hex(uart, va_arg(args, int), 'a');
+                    uart_put_hex(uart, va_arg(args, int), TRUE);
                     break;
                 case 'X':
-                    uart_put_hex(uart, va_arg(args, int), 'A');
+                    uart_put_hex(uart, va_arg(args, int), FALSE);
                     break;
                 case 'f':
                     uart_put_floating(uart, va_arg(args, double));
