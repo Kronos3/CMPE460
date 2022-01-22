@@ -1,6 +1,9 @@
 #include "adc.h"
 #include <msp.h>
 
+#define ADC_MAX (1 << 13)
+#define ADC_REF (2.5)
+
 void adc_init(void)
 {
     // wait for reference to be idle
@@ -48,7 +51,7 @@ void adc_init(void)
     // ------------------------------------------------------------------
     // 4) single, SMCLK, on, disabled, /1, 32 clocks, SHM	pulse-mode
     // ADC14->CTL0
-    ADC14->CTL0 = ADC14_CTL0_SSEL__SMCLK | ADC14_CTL0_ON | ADC14_CTL0_SHT0__32;
+    ADC14->CTL0 = ADC14_CTL0_SHP | ADC14_CTL0_SSEL__SMCLK | ADC14_CTL0_SHT0__32 | ADC14_CTL0_SHT1__32 | ADC14_CTL0_ON;
 
     // 20-16 STARTADDx  start addr          00000b = ADC14MEM0
     // 15-6  reserved                  0000000000b (reserved)
@@ -108,8 +111,8 @@ void adc_init(void)
 U32 adc_in(void)
 {
     // 1) wait for BUSY to be zero  ADC14->CTL0
-    // ADC14->CTL0 TODO
-//    while (ADC14->CTL0 & ADC14_CTL0_BUSY);
+    // ADC14->CTL0
+    while (ADC14->CTL0 & ADC14_CTL0_BUSY);
 
     // 2) start single conversion
     // ADC14->CTL0
@@ -117,10 +120,17 @@ U32 adc_in(void)
 
     // 3) wait for ADC14->IFGR0, ADC14->IFGR0 bit 0 is set when conversion done
     // ADC14->IFGR0
-    while(ADC14->IFGR0 & ADC14_IFGR0_IFG0);
+    while(!(ADC14->IFGR0 & ADC14_IFGR0_IFG0));
 
     // 14 bit sample returned  ADC14->MEM[0]
     // ADC14->MEM[0] 14-bit conversion in bits 13-0 (31-16 undefined, 15-14 zero)
     // ADC14->MEM[0]
-    return ADC14->MEM[0] & 0x01FFF;
+    U32 out = ADC14->MEM[0] & 0x01FFF;
+    FW_ASSERT(!(ADC14->IFGR0 & ADC14_IFGR0_IFG0));
+    return out;
+}
+
+F64 adc_voltage(U32 adc_i)
+{
+    return ((F64)adc_i / ADC_MAX) * ADC_REF;
 }
