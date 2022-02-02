@@ -1,6 +1,5 @@
 #include "tim.h"
 #include <msp.h>
-#include <arm.h>
 #include <nvic.h>
 
 #define TIM32_N (2)
@@ -15,10 +14,6 @@ static struct Timer32
         {NULL, TIMER32_1, 0, 1 << 25},
         {NULL, TIMER32_2, 0, 1 << 26},
 };
-
-static U32 systick_counter = 0;
-
-static void (* systick_task)(void) = NULL;
 
 void tim32_init(tim32_t timer,
                 void (* task)(void),
@@ -145,13 +140,11 @@ void tim_systick_set(bool_t enabled)
     }
 }
 
-void tim_systick_init(void (* task)(void), U32 arr)
+void tim_systick_init(U32 arr)
 {
     DISABLE_INTERRUPTS();
 
     tim_systick_set(FALSE);
-
-    systick_task = task;
 
     // Set the period of the systick
     SysTick->LOAD = arr - 1;
@@ -159,6 +152,7 @@ void tim_systick_init(void (* task)(void), U32 arr)
     // Clear the current systick
     SysTick->VAL = 0;
 
+    // Set the clock source and enable interrupt generation
     SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk;
 
     // priority 2
@@ -172,15 +166,4 @@ void tim_systick_init(void (* task)(void), U32 arr)
     tim_systick_set(TRUE);
 
     ENABLE_INTERRUPTS();
-}
-
-void SysTick_Handler(void)
-{
-    systick_counter++;
-    if (systick_task) systick_task();
-}
-
-U32 tim_systick_get(void)
-{
-    return systick_counter;
 }

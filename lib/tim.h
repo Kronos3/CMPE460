@@ -77,21 +77,14 @@ void tim32_reset(tim32_t timer);
 /**
  * Initialize the systick timer to call a function
  * on every interrupt
- * @param task task to run
- * @param arr timer period (no prescaller)
+ * @param arr timer period (no prescaler - use tim_calculate_arr(1, freq))
  */
-void tim_systick_init(void (*task)(void), U32 arr);
+void tim_systick_init(U32 arr);
 
 /**
  * Enable or disable the SYSTICK timer
  * @param enabled TRUE to enable, FALSE to disable
  */
 void tim_systick_set(bool_t enabled);
-
-/**
- * Get the current systick timer value
- * @return value of the systick counter
- */
-U32 tim_systick_get(void);
 
 #endif //CMPE460_TIM_H

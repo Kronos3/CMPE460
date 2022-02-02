@@ -59,8 +59,11 @@ add_link_options(
 include(${COMMON_PATH}/common.cmake)
 
 add_subdirectory(lib)
+add_subdirectory(os)
 
 add_subdirectory(lab1)
 add_subdirectory(lab2)
 add_subdirectory(lab4)
 add_subdirectory(lab5)
+
+add_subdirectory(os_test)

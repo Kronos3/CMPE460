@@ -4,6 +4,9 @@
  * Author: Andrei Tumbar
  */
 
+#ifdef __TUMBAR_RTOS__
+#include <global.h>
+#else
 #ifndef CMPE460_FW_H
 #define CMPE460_FW_H
 
@@ -66,4 +69,26 @@ __attribute__((noreturn)) void fw_assertion_failure(const char* file, U32 line, 
 #endif
 #define SQR(x) ((x)*(x))
 
+/**
+ * Mask all interrupts on the CPU
+ */
+#define DISABLE_INTERRUPTS() __asm__("cpsid if")
+
+/**
+ * Unmask all interrupts (that were previously masked)
+ */
+#define ENABLE_INTERRUPTS() __asm__("cpsie if")
+
+/**
+ * Sets a debugger breakpoint
+ */
+#define BREAKPOINT() __asm__("bkpt")
+
+/**
+ * Enters low power sleep mode waiting for interrupt (WFI instruction)
+ * Processor waits for next interrupt
+ */
+#define WAIT_FOR_INTERRUPT() __asm__("WFI")
+
 #endif //CMPE460_FW_H
+#endif //__TUMBAR_RTOS__
