@@ -17,6 +17,6 @@ int main()
     uart_init(UART_USB, BAUD_RATE);
     uart_init(UART_BT, BAUD_RATE);
 
-    uart_put(UART_USB, "Hello world\r\n");
+    uart_put(UART_USB, "Hello from USB\r\n");
     uart_put(UART_BT, "Hello from the bluetooth\r\n");
 }

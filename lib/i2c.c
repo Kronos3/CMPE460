@@ -73,7 +73,7 @@ void i2c0_init(U32 listenerAddress)
 
     // MASTER mode
     // I2C mode
-    EUSCI_B0->CTLW0 |= UCMST | UCMODE_3 | UCSYNC;
+    EUSCI_B0->CTLW0 |= UCMST | UCMODE_3;
 
     // SMCLK mode
     // don/t acknowledge
@@ -89,7 +89,6 @@ void i2c0_init(U32 listenerAddress)
 
     // set clock: 400 KHz
     EUSCI_B0->BRW = SystemCoreClock / (400000);
-    FW_ASSERT(EUSCI_B0->BRW == 8, EUSCI_B0->BRW);
 
     // initialize RECEIVER address
     // EUSCI_B0->I2CSA

@@ -10,4 +10,4 @@ target_link_libraries(lab4-bt-3 uart)
 
 # I2C targets
 build_elf(lab4-i2c i2c/lab4-i2c.c)
-target_link_libraries(lab4-i2c oled)
+target_link_libraries(lab4-i2c oled uart uartlib)

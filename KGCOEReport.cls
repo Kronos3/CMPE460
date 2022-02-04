@@ -38,7 +38,7 @@
 
         \begin{center}
             \large
-            \textbf{\classCode \ Exercise \exerciseNumber}
+            \textbf{\classCode \ Laboratory Exercise \exerciseNumber}
 
             \bigskip
 
@@ -54,15 +54,15 @@
             \begin{flushleft} % Make sure LaTeX does not try to justify these lines
                 \name\\
                 Performed: \dateDone\\
-                % Submitted: \dateSubmitted\\
+                Submitted: \dateSubmitted\\
                 \vspace*{\baselineskip} % Adds one line of spacing on this line, like the template
-                % Lab Section: \LabSectionNum\\
+                Lab Section: \LabSectionNum\\
                 Instructor: \LabInstructor\\
                 TA:\begin{_TAalignment}\TAs  % There can't be a space between the \TAs and the enviroment declaration
                 \end{_TAalignment}
                 \vspace*{\baselineskip}
-                % Lecture Section: \LectureSectionNum\\
-                % Professor: \LectureInstructor\\
+                Lecture Section: \LectureSectionNum\\
+                Professor: \LectureInstructor\\
             \end{flushleft}
         \end{multicols}
 
@@ -119,4 +119,3 @@
 
 %%%%%%% Check to see if we were given a correct department code
 \@ifundefined{KGCOEDocType}{\ClassError{KGCOEReport}{Unrecognized Department Code}{Available department codes are CMPE, EEEE}}{}
-
