@@ -23,6 +23,9 @@ int main()
     uart_init(UART_USB, BAUD_RATE);
     uart_init(UART_BT, BAUD_RATE);
 
+    uart_put(UART_USB, "Hello PC\r\n");
+    uart_put(UART_BT, "Hello BT\r\n");
+
     while(1)
     {
         for (uart_t uart = 0; uart < UART_INVALID; uart++)

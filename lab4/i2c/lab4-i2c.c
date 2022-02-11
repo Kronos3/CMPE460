@@ -4,6 +4,8 @@
 
 // There's two times more columns than rows
 // Make sure that what I just said is not b.s.
+// This assumption must hold true for the draw line
+// code to be valid and not cause memory overruns
 COMPILE_ASSERT(OLED_WIDTH == OLED_HEIGHT * 2, oled_line_assert);
 
 static void draw_line(OLEDCanvas canvas)
@@ -31,6 +33,7 @@ static void draw_line(OLEDCanvas canvas)
 
 int main()
 {
+    // Initialize the UART for control and printing assertions
     uart_init(UART_USB, 9600);
     oled_init();
 
@@ -42,7 +45,7 @@ int main()
     oled_print(&t, "line 4");
     oled_print(&t, "hello again");
 
-    // Wait for input
+    // Wait for input to display the line
     (void) uart_getchar(UART_USB);
 
     // Draw the second part of the demo
