@@ -1,7 +1,7 @@
 #include "adc.h"
 #include <msp.h>
 
-#define ADC_MAX (1 << 13)
+#define ADC_MAX (1 << 14)
 #define ADC_REF (2.5)
 
 void adc_init(void)
@@ -108,7 +108,7 @@ void adc_init(void)
 // ADC14->CLRIFGR0 bit 0, write 1 to clear flag
 // ADC14->IVx is 0x0C when ADC14MEM0 interrupt flag; Interrupt Flag: ADC14IFG0
 // ADC14->MEM[0] 14-bit conversion in bits 13-0 (31-16 undefined, 15-14 zero)
-U32 adc_in(void)
+U16 adc_in(void)
 {
     // 1) wait for BUSY to be zero  ADC14->CTL0
     // ADC14->CTL0
@@ -123,14 +123,14 @@ U32 adc_in(void)
     while(!(ADC14->IFGR0 & ADC14_IFGR0_IFG0));
 
     // 14 bit sample returned  ADC14->MEM[0]
-    // ADC14->MEM[0] 14-bit conversion in bits 13-0 (31-16 undefined, 15-14 zero)
+    // ADC14->MEM[0] 14-bit conversion in bits 14-0 (31-16 undefined, 15 zero)
     // ADC14->MEM[0]
-    U32 out = ADC14->MEM[0] & 0x01FFF;
+    U16 out = ADC14->MEM[0] & 0x03FFF;
     FW_ASSERT(!(ADC14->IFGR0 & ADC14_IFGR0_IFG0));
     return out;
 }
 
-F64 adc_voltage(U32 adc_i)
+F64 adc_voltage(U16 adc_i)
 {
     return ((F64)adc_i / ADC_MAX) * ADC_REF;
 }

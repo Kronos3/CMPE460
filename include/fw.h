@@ -20,6 +20,9 @@ typedef unsigned long U32;
 typedef float F32;
 typedef double F64;
 
+// Pointer sized
+typedef U32 PXX;
+
 #define COMPILE_ASSERT(expr, name) typedef char __compile_assert_##name[(expr) ? 0 : -1]
 
 // Check that the compiler agrees with our defines

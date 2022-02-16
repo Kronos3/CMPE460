@@ -16,13 +16,13 @@ void adc_init(void);
  * Trigger ADC conversion and wait for value
  * @return 14-bit value read out of ADC
  */
-U32 adc_in(void);
+U16 adc_in(void);
 
 /**
  * Convert an ADC reading into a voltage
  * @param adc_i adc reading from adc_in()
  * @return voltage from 0-2.5V (ref)
  */
-F64 adc_voltage(U32 adc_i);
+F64 adc_voltage(U16 adc_i);
 
 #endif //CMPE460_ADC_H

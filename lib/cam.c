@@ -1,0 +1,176 @@
+#include <cam.h>
+#include <tim.h>
+#include <gpio.h>
+#include <adc.h>
+#include <string.h>
+
+// Run the camera clock at 100kHz
+#define CAMERA_FREQUENCY (100000.0)
+
+// Run the timer at double the frequency of the clock to set CLK HIGH and LOW
+#define SYS_TICK_FREQUENCY (CAMERA_FREQUENCY * 2)
+
+// TODO(tumbar) Make sure these pins are good
+#define CLK_PORT (GPIO_PORT_1)
+#define CLK_PIN (1 << 3)
+#define SI_PORT (GPIO_PORT_1)
+#define SI_PIN (1 << 4)
+
+typedef enum
+{
+    CAM_IDLE,           //!< Waiting for camera request
+    CAM_EXPOSURE,       //!< During SI pulse
+    CAM_SCAN,           //!< Reading from ADC
+} CameraState;
+
+static struct
+{
+    U16* output_buffer;     //!< ADC sample output buffer
+    GblReply reply;         //!< Reply to send when we are finished
+    U32 i;                  //!< State specific tick counter
+    CameraState state;
+} cam_request;
+
+static void cam_clear_request(void)
+{
+    // Clear the request
+    cam_request.i = 0;
+    cam_request.output_buffer = NULL;
+    cam_request.state = CAM_IDLE;
+    gbl_reply_clear(&cam_request.reply);
+}
+
+void cam_init(void)
+{
+    // Initialize the camera request memory
+    cam_clear_request();
+
+    // Run the systick timer twice as fast as the clock frequency
+    // We need double to set the CLK signal low and high
+    tim_systick_init(tim_calculate_arr(TIM32_PSC_1, SYS_TICK_FREQUENCY));
+
+    // Initialize the control GPIO pins to general purpose
+    gpio_init(CLK_PORT, CLK_PIN, GPIO_FUNCTION_GENERAL);
+    gpio_init(SI_PORT, SI_PIN, GPIO_FUNCTION_GENERAL);
+
+    // Both of these control pins are output pins
+    gpio_options(CLK_PORT, CLK_PIN, GPIO_OPTIONS_DIRECTION_OUTPUT);
+    gpio_options(SI_PORT, SI_PIN, GPIO_OPTIONS_DIRECTION_OUTPUT);
+
+    // Initialize the ADC to read from the camera
+    adc_init();
+}
+
+static void cam_tick_exposure(void)
+{
+    // The exposure task runs over multiple ticks on the timer
+    // The ticks works as follows:
+    //   1. SI Pulse to trigger exposure
+    //   2. Clock goes high
+    //   3. Stop SI Pulse
+    //   4. Clock goes low
+    switch(cam_request.i)
+    {
+        case 0:
+            // Start SI Pulse
+            gpio_output(SI_PORT, SI_PIN, TRUE);
+            break;
+        case 1:
+            // Set clock high
+            gpio_output(CLK_PORT, CLK_PIN, TRUE);
+            break;
+        case 2:
+            // Stop SI Pulse
+            gpio_output(SI_PORT, SI_PIN, FALSE);
+            break;
+        case 3:
+            // Set clock low
+            gpio_output(CLK_PORT, CLK_PIN, FALSE);
+            break;
+        default:
+            FW_ASSERT(0 && "Invalid exposure index", cam_request.i);
+    }
+
+    cam_request.i++;
+
+    if (cam_request.i >= 4)
+    {
+        // We are done with the exposure stage
+        // Go to the scan phase
+        cam_request.i = 0;
+        cam_request.state = CAM_SCAN;
+    }
+}
+
+static void cam_tick_scan(void)
+{
+    // Make sure our for condition loop holds
+    FW_ASSERT(cam_request.i < CAMERA_BUF_N * 2);
+
+    // Poll the ADC before the next rising edge
+    if (cam_request.i % 2)
+    {
+        cam_request.output_buffer[cam_request.i / 2] = adc_in();
+    }
+
+    // Toggle the clock signal
+    gpio_output(CLK_PORT, CLK_PIN, cam_request.i % 2);
+
+    // Increment the counter
+    cam_request.i++;
+
+    if (cam_request.i >= CAMERA_BUF_N * 2)
+    {
+        // Scanning has finished
+        // Send the reply and stop the request
+
+        // Save the data we need before clearing the camera request
+        PXX out_buf = (PXX)cam_request.output_buffer;
+        GblReply reply_buf = cam_request.reply;
+
+        // Reset the request state
+        // Do this before the reply so that another camera
+        // request can be triggered inside the reply
+        cam_clear_request();
+
+        // Send the reply
+        gbl_reply_ret(&reply_buf,
+                      GBL_STATUS_SUCCESS,
+                      out_buf);
+    }
+}
+
+void SysTick_Handler(void)
+{
+    switch(cam_request.state)
+    {
+        case CAM_IDLE:
+            // No running camera requests
+            // Stop the systick
+            tim_systick_set(FALSE);
+            break;
+        case CAM_EXPOSURE:
+            cam_tick_exposure();
+            break;
+        // TODO(tumbar) Do we need an 18 cycle wait time between these two?
+        case CAM_SCAN:
+            cam_tick_scan();
+            break;
+    }
+}
+
+void cam_sample(CameraLine dest, GblReply reply)
+{
+    // Make sure there is no running request
+    FW_ASSERT(cam_request.state == CAM_IDLE && "Running camera request",
+              cam_request.state, cam_request.i);
+
+    // Place the camera request in a start configuration
+    cam_request.output_buffer = dest;
+    cam_request.reply = reply;
+    cam_request.i = 0;
+    cam_request.state = CAM_EXPOSURE;
+
+    // Start sampling from the camera by starting the timer
+    tim_systick_set(TRUE);
+}

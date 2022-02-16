@@ -34,12 +34,16 @@ typedef struct {
     bool_t scroll;          // If TRUE, text will be scrolled like a terminal, otherwise overwritten
 } TextCanvas;
 
-#define oled_clear(canvas) memset((canvas), 0, sizeof(OLEDCanvas))
-
 /**
  * Initialize the OLED I2C device
  */
 void oled_init(void);
+
+/**
+ * Clear the canvas of all enabled pixels
+ * @param canvas canvas to clear
+ */
+void oled_clear(OLEDCanvas canvas);
 
 /**
  * Convert a camera array canvas into an OLED canvas

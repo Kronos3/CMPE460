@@ -6,6 +6,17 @@
 // Override the weak reference default handler
 static U32 timer_counter_ms = 0;
 static bool_t timer_running = FALSE;
+static U32 led_2_i = 0;
+
+const static U32 led_2_colors[] = {
+        LED2_RED, // r
+        LED2_GREEN, // g
+        LED2_BLUE, // b
+        LED2_GREEN | LED2_BLUE, // c
+        LED2_RED | LED2_BLUE, // m
+        LED2_RED | LED2_GREEN, // y
+        LED2_RED | LED2_GREEN | LED2_BLUE, // w
+};
 
 static void switch_1_handler(void)
 {
@@ -13,6 +24,11 @@ static void switch_1_handler(void)
     timer_enabled = !timer_enabled;
     tim32_reset(TIM32_1);
     tim32_set(TIM32_1, timer_enabled);
+
+    if (!timer_enabled)
+    {
+        led_off(LED1);
+    }
 }
 
 static void switch_2_handler(void)
@@ -21,7 +37,9 @@ static void switch_2_handler(void)
     {
         timer_running = FALSE;
         tim32_set(TIM32_2, FALSE);
+        led_off(LED2_ALL);
         uprintf("Timer ran for %d ms\r\n", timer_counter_ms);
+        led_2_i = (led_2_i + 1) % (sizeof(led_2_colors) / sizeof(led_2_colors[0]));
     }
     else
     {
@@ -29,6 +47,7 @@ static void switch_2_handler(void)
         timer_counter_ms = 0;
         tim32_reset(TIM32_2);
         tim32_set(TIM32_2, TRUE);
+        led2_set(led_2_colors[led_2_i]);
     }
 }
 
@@ -48,23 +67,6 @@ static void timer1_task(void)
 
 static void timer2_task(void)
 {
-    static U32 i = 0;
-    const static U32 colors[] = {
-            LED2_RED, // r
-            LED2_GREEN, // g
-            LED2_BLUE, // b
-            LED2_GREEN | LED2_BLUE, // c
-            LED2_RED | LED2_BLUE, // m
-            LED2_RED | LED2_GREEN, // y
-            LED2_RED | LED2_GREEN | LED2_BLUE, // w
-    };
-
-    if (timer_counter_ms % 500 == 0)
-    {
-        led2_set(colors[i++]);
-        i %= sizeof(colors) / sizeof(colors[0]);
-        (void) i;
-    }
     timer_counter_ms++;
 }
 

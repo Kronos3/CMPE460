@@ -156,6 +156,11 @@ void oled_init(void)
     oled_display_on();
 }
 
+void oled_clear(OLEDCanvas canvas)
+{
+    memset(canvas, 0, sizeof(OLEDCanvas));
+}
+
 //unsigned char a[]={0x00,0x00,0xC0,0x38,0xE0,0x00,0x00,0x00,0x20,0x3C,0x23,0x02,0x02,0x27,0x38,0x20};
 
 void oled_ascii(OLEDCanvas canvas, I32 row, I32 col, char ascii)
@@ -335,7 +340,6 @@ void oled_text_clear(TextCanvas* tcanvas)
 
 void oled_camera_to_oled(OLEDCanvas canvas, const U16* camera_in_array)
 {
-    // TODO(tumbar) Do we need this?
     oled_clear(canvas);
 
     for (I32 i = 0; i < SSD1306_LCDWIDTH; i++)

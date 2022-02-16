@@ -1,6 +1,5 @@
 #include <switch.h>
 #include <msp432.h>
-#include <arm.h>
 #include <nvic.h>
 
 #define USR_BTN (P1)
