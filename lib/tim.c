@@ -110,6 +110,12 @@ U32 tim_calculate_arr(U32 prescaler, F64 hz)
     return (U32) (((F64) SystemCoreClock / (F64) prescaler) / hz);
 }
 
+U32 tim_calculate_delay(U32 prescaler, F64 seconds)
+{
+    F64 count_per_second = (F64) SystemCoreClock / (F64) prescaler;
+    return (U32)(seconds * count_per_second);
+}
+
 void tim32_set(tim32_t timer, bool_t enabled)
 {
     // Make sure a TIM32 was selected
@@ -118,6 +124,11 @@ void tim32_set(tim32_t timer, bool_t enabled)
 
     if (enabled) t->timer->CONTROL |= TIMER32_CONTROL_ENABLE;
     else t->timer->CONTROL &= ~TIMER32_CONTROL_ENABLE;
+}
+
+U32 tim32_get(tim32_t timer)
+{
+    return timer32_table[timer].timer->VALUE;
 }
 
 void tim32_reset(tim32_t timer)

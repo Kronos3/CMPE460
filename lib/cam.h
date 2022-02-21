@@ -26,4 +26,32 @@ void cam_init(void);
  */
 void cam_sample(CameraLine dest, GblReply reply);
 
+/**
+ * Exposed camera IRQ that needs to be called from SysTick
+ */
+void cam_irq(void);
+
+/**
+ * Initialize the camera process to continuously integrate
+ * with the camera at a certain integration period
+ * @param dest buffer to write camera images to
+ * @param integration_period time to integrate each image on the camera
+ * @param reply reply to call each time an image is ready
+ */
+void cam_process(CameraLine dest, F64 integration_period, GblReply reply);
+
+/**
+ * Start the camera process
+ * (must be called after cam_process())
+ */
+void cam_process_start(void);
+
+/**
+ * Stop the camera process
+ * @param reply_on_cancel reply to override the currently running camera request (if any)
+ * @return TRUE a camera request was canceled and overridden by reply_on_cancel
+ *          FALSE if no camera request was running
+ */
+bool_t cam_process_stop(GblReply reply_on_cancel);
+
 #endif //CMPE460_CAM_H

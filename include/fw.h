@@ -35,6 +35,9 @@ COMPILE_ASSERT(sizeof(U32) == 4, sizeof_u32);
 COMPILE_ASSERT(sizeof(F32) == 4, sizeof_f32);
 COMPILE_ASSERT(sizeof(F64) == 8, sizeof_f64);
 
+#define UINT32_MAX (0xFFFFFFFF)
+#define INT32_MAX (0x7FFFFFFF)
+
 typedef enum
 {
     FALSE,

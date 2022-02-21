@@ -77,6 +77,9 @@ void gpio_options(gpio_port_t port,
         case GPIO_PORT_3:
             port_ptr = P3;
             break;
+        case GPIO_PORT_5:
+            port_ptr = P5;
+            break;
         case GPIO_PORT_2:
         case GPIO_PORT_4:
         default:

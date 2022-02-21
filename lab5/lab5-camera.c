@@ -1,23 +1,9 @@
 #include <uartlib.h>
 #include <cam.h>
-#include <oled.h>
 #include <switch.h>
 
-// Number of buffers to switch between while imaging and drawing
-#define CAMERA_BUF_TOTAL_N (2)
-
-// Whether to continuously scan/draw the camera image
-static volatile bool_t imaging_enabled = FALSE;
-
-// Buffer ready to be displayed on the OLED display
-static U16* volatile buffer_ready = NULL;
-
 // Buffers to swap between image acquisition and processing
-static volatile U32 camera_buf_i = 0;
-static CameraLine camera_buf[CAMERA_BUF_TOTAL_N];
-
-// Our processing tasks assumes more than one buffer
-COMPILE_ASSERT(CAMERA_BUF_TOTAL_N > 1, number_of_camera_buffers_gt_1);
+static CameraLine camera_buf;
 
 /**
  * Handle camera replies by notifying the main process
@@ -25,98 +11,78 @@ COMPILE_ASSERT(CAMERA_BUF_TOTAL_N > 1, number_of_camera_buffers_gt_1);
  * @param reply reply sent by the camera process
  * @param status reply status from the camera
  */
-static void camera_finished(const GblReply* reply, GblStatus status)
+static void camera_handler(const GblReply* reply, GblStatus status)
 {
+    (void) reply;
     FW_ASSERT(status == GBL_STATUS_SUCCESS && "Camera request failed");
-    FW_ASSERT(!buffer_ready && "Buffer has not finished processing when a camera reply was received", buffer_ready);
-
-    // Tell the drawing process that a new camera line is ready to draw
-    buffer_ready = (U16*) reply->ret[0];
-
-    // Swap to a new buffer
-    camera_buf_i = (camera_buf_i + 1) % CAMERA_BUF_TOTAL_N;
 }
 
-/**
- * Handle button press by toggling image enable
- */
+// We need to expose SysTick_Handler here so that
+// the weak reference is overridden
+void SysTick_Handler(void)
+{
+    cam_irq();
+}
+
+#define EXPOSURE_TIME (10e-3)
+
+static void single_handler(const GblReply* self, GblStatus status)
+{
+    (void) self;
+    (void) status;
+
+    const U16* camera_buffer = (const U16*) self->ret[0];
+
+    // Print the camera data to the UART
+    for (U32 i = 0; i < CAMERA_BUF_N; i++)
+    {
+        uprintf("%d", camera_buffer[i]);
+    }
+    uprintf("\r\n");
+}
+
 static void switch_handler(void)
 {
-    imaging_enabled = !imaging_enabled;
+    static bool_t continuous_mode = TRUE;
+    continuous_mode = !continuous_mode;
 
-    switch(imaging_enabled)
+    switch(continuous_mode)
     {
+        default:
         case FALSE:
-        // Stop imaging on the camera
-        // Notify the user that imaging has stopped on the OLED
         {
-            static TextCanvas tc = {
-                    .scroll = FALSE,
-                    .current_line = 1,
-                    .canvas = {0}
-            };
+            // Run a single request
+            GblReply single_reply = gbl_reply_init(single_handler, 0);
+            if (!cam_process_stop(single_reply))
+            {
+                // There is no running request
+                // We need to send a single one
 
-            oled_clear(tc.canvas);
-            oled_print(&tc, "Camera stopped");
-            oled_print(&tc, "Press SW1 to start");
+            }
         }
             break;
         case TRUE:
-        // Start the camera imaging chain
         {
-            GblReply cam_reply = gbl_reply_init(camera_finished, 0);
-            cam_sample(camera_buf[camera_buf_i], cam_reply);
+            cam_process(camera_buf, EXPOSURE_TIME, gbl_reply_init(camera_handler, 0));
+            cam_process_start();
         }
             break;
-        default:
-            FW_ASSERT(0 && "Invalid imaging state", imaging_enabled);
     }
 }
 
 int main(void)
 {
     uart_init(UART_USB, 9600);
-    switch_init(SWITCH_1, SWITCH_INT_PRESS, switch_handler);
-    oled_init();
     cam_init();
+    switch_init(SWITCH_1, SWITCH_INT_PRESS, switch_handler);
 
-    // We are using the same reply for every chained
-    // cam_sample() call
-    GblReply cam_reply = gbl_reply_init(camera_finished, 0);
-
-    static TextCanvas tc = {
-            .scroll = FALSE,
-            .current_line = 1,
-            .canvas = {0}
-    };
-
-    oled_print(&tc, "Camera not started yet");
-    oled_print(&tc, "Press SW1 to start");
-
-    // Canvas used for drawing camera data to OLED
-    static OLEDCanvas canvas;
+    // Run the continuous camera process to test
+    // on the oscilloscope
+    cam_process(camera_buf, EXPOSURE_TIME, gbl_reply_init(camera_handler, 0));
+    cam_process_start();
 
     while(TRUE)
     {
-        // Asynchronously set on camera reply
-        // First sample is started in the switch interrupt
-        if (buffer_ready)
-        {
-            // Chain the imaging as needed
-            // Is done immediately to not waste time waiting for buffer processing
-            if (imaging_enabled)
-            {
-                cam_sample(camera_buf[camera_buf_i], cam_reply);
-            }
-
-            // Convert the ADC readings to OLED pixels
-            oled_camera_to_oled(canvas, buffer_ready);
-
-            // Draw the canvas to the OLED
-            oled_draw(canvas);
-
-            // Clear the waiting buffer
-            buffer_ready = NULL;
-        }
+        WAIT_FOR_INTERRUPT();
     }
 }

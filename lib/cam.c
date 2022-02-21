@@ -10,11 +10,10 @@
 // Run the timer at double the frequency of the clock to set CLK HIGH and LOW
 #define SYS_TICK_FREQUENCY (CAMERA_FREQUENCY * 2)
 
-// TODO(tumbar) Make sure these pins are good
-#define CLK_PORT (GPIO_PORT_1)
-#define CLK_PIN (1 << 3)
-#define SI_PORT (GPIO_PORT_1)
-#define SI_PIN (1 << 4)
+#define CLK_PORT (GPIO_PORT_5)
+#define CLK_PIN (1 << 4)
+#define SI_PORT (GPIO_PORT_5)
+#define SI_PIN (1 << 5)
 
 typedef enum
 {
@@ -31,6 +30,12 @@ static struct
     CameraState state;
 } cam_request;
 
+static struct
+{
+    U16* output_buffer;
+    GblReply reply;
+} cam_process_state;
+
 static void cam_clear_request(void)
 {
     // Clear the request
@@ -40,10 +45,17 @@ static void cam_clear_request(void)
     gbl_reply_clear(&cam_request.reply);
 }
 
+static void cam_clear_process(void)
+{
+    cam_process_state.output_buffer = NULL;
+    gbl_reply_clear(&cam_process_state.reply);
+}
+
 void cam_init(void)
 {
     // Initialize the camera request memory
     cam_clear_request();
+    cam_clear_process();
 
     // Run the systick timer twice as fast as the clock frequency
     // We need double to set the CLK signal low and high
@@ -67,25 +79,23 @@ static void cam_tick_exposure(void)
     // The ticks works as follows:
     //   1. SI Pulse to trigger exposure
     //   2. Clock goes high
-    //   3. Stop SI Pulse
-    //   4. Clock goes low
+    //   3. Stop SI Pulse - clock is stopped during scan
     switch(cam_request.i)
     {
         case 0:
             // Start SI Pulse
             gpio_output(SI_PORT, SI_PIN, TRUE);
+            gpio_output(CLK_PORT, CLK_PIN, FALSE);
             break;
         case 1:
             // Set clock high
+            gpio_output(SI_PORT, SI_PIN, TRUE);
             gpio_output(CLK_PORT, CLK_PIN, TRUE);
             break;
         case 2:
             // Stop SI Pulse
             gpio_output(SI_PORT, SI_PIN, FALSE);
-            break;
-        case 3:
-            // Set clock low
-            gpio_output(CLK_PORT, CLK_PIN, FALSE);
+            gpio_output(CLK_PORT, CLK_PIN, TRUE);
             break;
         default:
             FW_ASSERT(0 && "Invalid exposure index", cam_request.i);
@@ -93,7 +103,7 @@ static void cam_tick_exposure(void)
 
     cam_request.i++;
 
-    if (cam_request.i >= 4)
+    if (cam_request.i >= 3)
     {
         // We are done with the exposure stage
         // Go to the scan phase
@@ -128,6 +138,8 @@ static void cam_tick_scan(void)
         PXX out_buf = (PXX)cam_request.output_buffer;
         GblReply reply_buf = cam_request.reply;
 
+        gpio_output(CLK_PORT, CLK_PIN, FALSE);
+
         // Reset the request state
         // Do this before the reply so that another camera
         // request can be triggered inside the reply
@@ -136,17 +148,20 @@ static void cam_tick_scan(void)
         // Send the reply
         gbl_reply_ret(&reply_buf,
                       GBL_STATUS_SUCCESS,
+                      1,
                       out_buf);
     }
 }
 
-void SysTick_Handler(void)
+void cam_irq(void)
 {
     switch(cam_request.state)
     {
         case CAM_IDLE:
             // No running camera requests
             // Stop the systick
+            gpio_output(CLK_PORT, CLK_PIN, FALSE);
+            gpio_output(SI_PORT, SI_PIN, FALSE);
             tim_systick_set(FALSE);
             break;
         case CAM_EXPOSURE:
@@ -173,4 +188,59 @@ void cam_sample(CameraLine dest, GblReply reply)
 
     // Start sampling from the camera by starting the timer
     tim_systick_set(TRUE);
+}
+
+/**
+ * This is the integration handler from TIM32_1
+ * We will request another image which will reply
+ * back to the user when the image is complete.
+ * @param reply reply sent by the camera process
+ * @param status reply status from the camera
+ */
+static void camera_process_handler()
+{
+    cam_sample(cam_request.output_buffer,
+               cam_process_state.reply);
+}
+
+void cam_process(CameraLine dest, F64 integration_period, GblReply reply)
+{
+    DISABLE_INTERRUPTS();
+
+    // Disable both of the timers
+    tim_systick_set(FALSE);
+    tim32_set(TIM32_1, FALSE);
+
+    tim32_init(TIM32_1, camera_process_handler,
+               tim_calculate_arr(TIM32_PSC_1, 1/integration_period),
+               TIM32_PSC_1,
+               TIM32_MODE_PERIODIC);
+
+    cam_process_state.reply = reply;
+    cam_process_state.output_buffer = dest;
+
+    ENABLE_INTERRUPTS();
+}
+
+void cam_process_start(void)
+{
+    FW_ASSERT(cam_process_state.output_buffer && "No process initialized");
+    tim32_set(TIM32_1, TRUE);
+}
+
+bool_t cam_process_stop(GblReply reply_on_cancel)
+{
+    FW_ASSERT(cam_process_state.output_buffer && "No process running");
+    tim32_set(TIM32_1, FALSE);
+
+    if (cam_request.state == CAM_IDLE)
+    {
+        return FALSE;
+    }
+    else
+    {
+        // Override the currently running request
+        cam_request.reply = reply_on_cancel;
+        return TRUE;
+    }
 }

@@ -60,11 +60,27 @@ void tim32_init(tim32_t timer,
 U32 tim_calculate_arr(U32 psc, F64 hz);
 
 /**
+ * Calculate the number of counts to achieve a certain
+ * delay given the pre-scaled clock
+ * @param prescaler prescaler on the clock you are polling
+ * @param seconds seconds to wait
+ * @return number of counts on the clock
+ */
+U32 tim_calculate_delay(U32 prescaler, F64 seconds);
+
+/**
  * Start a timer
  * @param timer timer to start
  * @param enabled TRUE to enable, FALSE to disable
  */
 void tim32_set(tim32_t timer, bool_t enabled);
+
+/**
+ * Get the current count of the timer
+ * @param timer timer to read
+ * @return current count on the timer
+ */
+U32 tim32_get(tim32_t timer);
 
 /**
  * Reset the timer32 by reloading the LOAD register
