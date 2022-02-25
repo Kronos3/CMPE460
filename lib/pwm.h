@@ -29,35 +29,53 @@ typedef enum
     PWM_PRESCALE_8,
 } pwm_prescaler_t;
 
+COMPILE_ASSERT(PWM_PRESCALE_8 == 0x7, pwm_check_psc_enum);
+
+typedef enum
+{
+    PWM_PIN_0,
+    PWM_PIN_1,
+    PWM_PIN_2,
+    PWM_PIN_3,
+    PWM_PIN_4,
+    PWM_PIN_N,
+} pwm_pin_t;
+
 /**
  * Initialize the TimerA to run at a specific frequency
  * @param pwm pwm channel to initialize
- * @param prescaler clock prescaler to use
+ * @param prescaler_1 clock first prescaler to use
+ * @param prescaler_2 clock first prescaler to use
  * @param rate frequency of the pwm
  * @return the gpio pin this pwm channel maps to
  */
-GpioPin pwm_init(pwm_t pwm, pwm_prescaler_t prescaler, F32 rate);
+void pwm_init(pwm_t pwm,
+              pwm_prescaler_t prescaler_1,
+              pwm_prescaler_t prescaler_2,
+              F32 rate);
+
+/**
+ * Initialize own of the output pins on a pwm channel
+ * @param pwm pwm channel where pin lies
+ * @param pin pin to initialize
+ */
+void pwm_init_pin(pwm_t pwm, pwm_pin_t pin);
 
 /**
  * Set the duty cycle on a pwm channel
  * (able to do while running)
  * @param pwm pwm channel to set duty cycle on
+ * @param pwm_pin_t pwm channel to set duty cycle on
  * @param duty duty cycle (between 0.0 - 1.0)
  */
-void pwm_set(pwm_t pwm, F32 duty);
-
-/**
- * Get the current duty cycle on a pwm channel
- * @param pwm pwm channel
- * @return duty cycle from 0.0 to 1.0
- */
-F32 pwm_get(pwm_t pwm);
+void pwm_set(pwm_t pwm, pwm_pin_t pin, F64 duty);
 
 /**
  * Start the pulse on a pwm channel
  * @param pwm channel to start pulse on
+ * @param pin pin to start pulse on
  */
-void pwm_start(pwm_t pwm);
+void pwm_start(pwm_t pwm, pwm_pin_t pin);
 
 /**
  * Stop the pulse on a pwm channel

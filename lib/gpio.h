@@ -16,6 +16,11 @@ typedef enum
     GPIO_PORT_3,
     GPIO_PORT_4,
     GPIO_PORT_5,
+    GPIO_PORT_6,
+    GPIO_PORT_7,
+    GPIO_PORT_8,
+    GPIO_PORT_9,
+    GPIO_PORT_10,
 } gpio_port_t;
 
 #define GPIO_PIN(port_, pin_) {GPIO_PORT_##port_, (1 << (pin_))}

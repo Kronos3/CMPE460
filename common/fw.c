@@ -35,7 +35,7 @@ void fw_assertion_failure(const char* file, U32 line,
     uprintf("\r\n");
 
     // Hang Mr. CPU please
-    BREAKPOINT(); // break point if we are in a debugger
+//    BREAKPOINT(); // break point if we are in a debugger
     while (1)
     {
         WAIT_FOR_INTERRUPT();

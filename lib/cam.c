@@ -114,6 +114,7 @@ static void cam_tick_scan(void)
 {
     // Make sure our for condition loop holds
     FW_ASSERT(cam_request.i < CAMERA_BUF_N * 2);
+    FW_ASSERT(cam_request.output_buffer);
 
     // Poll the ADC before the next rising edge
     if (cam_request.i % 2)
@@ -196,7 +197,7 @@ void cam_sample(CameraLine dest, GblReply reply)
  */
 static void camera_process_handler()
 {
-    cam_sample(cam_request.output_buffer,
+    cam_sample(cam_process_state.output_buffer,
                cam_process_state.reply);
 }
 
@@ -212,6 +213,8 @@ void cam_process(CameraLine dest, F64 integration_period, GblReply reply)
                tim_calculate_arr(TIM32_PSC_1, 1/integration_period),
                TIM32_PSC_1,
                TIM32_MODE_PERIODIC);
+
+    FW_ASSERT(dest);
 
     cam_process_state.reply = reply;
     cam_process_state.output_buffer = dest;

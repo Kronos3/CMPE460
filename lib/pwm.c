@@ -1,41 +1,189 @@
 #include <msp432.h>
 #include <pwm.h>
 
+#define PWM_PIN_OPTIONS (GPIO_OPTIONS_DIRECTION_OUTPUT | GPIO_OPTIONS_HIGH_DRIVE_STRENGTH)
+
 typedef struct PwmRegistration_prv
 {
-    pwm_t id;
-    GpioPin pin;
     Timer_A_Type* hw;
+    struct
+    {
+        GpioPin pin;
+        gpio_function_t function;
+    } pins[5];
 } PwmRegistration;
 
 static const PwmRegistration pwm_registration[] = {
-        {PWM_0, GPIO_PIN(3, 3), TIMER_A0},
-        {PWM_1, GPIO_PIN(3, 3), TIMER_A1},
-        {PWM_2, GPIO_PIN(3, 3), TIMER_A2},
-        {PWM_3, GPIO_PIN(3, 3), TIMER_A3},
+        {
+            TIMER_A0,
+            {
+                {GPIO_PIN(7, 3), GPIO_FUNCTION_PRIMARY},
+                {GPIO_PIN(2, 4), GPIO_FUNCTION_PRIMARY},
+                {GPIO_PIN(2, 5), GPIO_FUNCTION_PRIMARY},
+                {GPIO_PIN(2, 6), GPIO_FUNCTION_PRIMARY},
+                {GPIO_PIN(2, 7), GPIO_FUNCTION_PRIMARY},
+            },
+        },
+        {
+            TIMER_A1,
+            {
+                    {GPIO_PIN(8, 0), GPIO_FUNCTION_SECONDARY},
+                    {GPIO_PIN(7, 7), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(7, 6), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(7, 5), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(7, 4), GPIO_FUNCTION_PRIMARY},
+            },
+        },
+        {
+            TIMER_A2,
+            {
+                    {GPIO_PIN(8, 1), GPIO_FUNCTION_SECONDARY},
+                    {GPIO_PIN(5, 6), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(5, 7), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(6, 6), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(6, 7), GPIO_FUNCTION_PRIMARY},
+            },
+        },
+        {
+            TIMER_A3,
+            {
+                    {GPIO_PIN(10, 4), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(10, 5), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(8, 2), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(9, 2), GPIO_FUNCTION_PRIMARY},
+                    {GPIO_PIN(9, 3), GPIO_FUNCTION_PRIMARY},
+            },
+        },
 };
 
-GpioPin pwm_init(pwm_t pwm, pwm_prescaler_t prescaler, F32 rate)
+void pwm_init(pwm_t pwm,
+              pwm_prescaler_t prescaler_1,
+              pwm_prescaler_t prescaler_2,
+              F32 rate)
 {
+    // Validate the input parameters
+    switch(pwm)
+    {
+        case PWM_0:
+        case PWM_1:
+        case PWM_2:
+        case PWM_3:
+            break;
+        default:
+            FW_ASSERT(0, pwm);
+    }
 
+    U16 id_mask;
+    switch(prescaler_1)
+    {
+        case PWM_PRESCALE_1:
+            id_mask = TIMER_A_CTL_ID__1;
+            break;
+        case PWM_PRESCALE_2:
+            id_mask = TIMER_A_CTL_ID__2;
+            break;
+        case PWM_PRESCALE_4:
+            id_mask = TIMER_A_CTL_ID__4;
+            break;
+        case PWM_PRESCALE_8:
+            id_mask = TIMER_A_CTL_ID__8;
+            break;
+        case PWM_PRESCALE_3:
+        case PWM_PRESCALE_5:
+        case PWM_PRESCALE_6:
+        case PWM_PRESCALE_7:
+        default:
+            FW_ASSERT(0 && "Invalid psc_1, must one of 1,2,4,8", prescaler_1);
+    }
+
+    switch(prescaler_2)
+    {
+        case PWM_PRESCALE_1:
+        case PWM_PRESCALE_2:
+        case PWM_PRESCALE_3:
+        case PWM_PRESCALE_4:
+        case PWM_PRESCALE_5:
+        case PWM_PRESCALE_6:
+        case PWM_PRESCALE_7:
+        case PWM_PRESCALE_8:
+            break;
+        default:
+            FW_ASSERT(0 && "Invalid psc_2, must one of 1,2,3,4,5,6,7,8", prescaler_2);
+    }
+
+    const PwmRegistration* self = &pwm_registration[pwm];
+    U32 total_prescaler = (prescaler_1 + 1) * (prescaler_2 + 1);
+
+    F64 prescaled_clock = (F64)SystemCoreClock / total_prescaler;
+    F64 count_f = prescaled_clock / rate;
+    U16 count = (U16)count_f;
+
+    FW_ASSERT(count_f < UINT16_MAX && "Need a higher prescaler",
+              (prescaler_1 + 1), (prescaler_2 + 1), count, UINT16_MAX);
+
+    self->hw->CTL =
+            TIMER_A_CTL_SSEL__SMCLK
+            | id_mask
+            | TIMER_A_CTL_MC__STOP // turn on later
+            ;
+
+    self->hw->EX0 = prescaler_2;
+
+    // Set total period
+    self->hw->CCR[0] = count;
+
+    for (pwm_pin_t i = PWM_PIN_1; i < PWM_PIN_N; i++)
+    {
+        // Disable pin output until pwm is started
+        // Set the pin low as well
+        self->hw->CCTL[i] = TIMER_A_CCTLN_OUTMOD_0;
+    }
+
+    // Load the prescaler and the settings
+    // Don't start the clock yet
+    self->hw->CTL |= TIMER_A_CTL_CLR;
 }
 
-void pwm_set(pwm_t pwm, F32 duty)
+void pwm_init_pin(pwm_t pwm, pwm_pin_t pin)
 {
+    FW_ASSERT(pwm >= PWM_0 && pwm <= PWM_3, pwm);
+    FW_ASSERT(pin >= PWM_PIN_0 && pin < PWM_PIN_N);
 
+    const PwmRegistration* self = &pwm_registration[pwm];
+    gpio_init(self->pins[pin].pin,
+              self->pins[pin].function);
+
+    gpio_options(self->pins[pin].pin, PWM_PIN_OPTIONS);
 }
 
-F32 pwm_get(pwm_t pwm)
+void pwm_set(pwm_t pwm, pwm_pin_t pin, F64 duty)
 {
+    FW_ASSERT(pwm >= PWM_0 && pwm <= PWM_3, pwm);
+    FW_ASSERT(pin >= PWM_PIN_0 && pin < PWM_PIN_N);
+    FW_ASSERT(duty >= 0.0 && duty <= 1.0, (U32)(100 * duty));
 
+    const PwmRegistration* self = &pwm_registration[pwm];
+    self->hw->CCR[pin] = (U16)(self->hw->CCR[0] * duty);
 }
 
-void pwm_start(pwm_t pwm)
+void pwm_start(pwm_t pwm, pwm_pin_t pin)
 {
+    FW_ASSERT(pwm >= PWM_0 && pwm <= PWM_3, pwm);
+    FW_ASSERT(pin >= PWM_PIN_0 && pin < PWM_PIN_N);
+    const PwmRegistration* self = &pwm_registration[pwm];
 
+    // Reset/Set
+    self->hw->CCTL[pin] = TIMER_A_CCTLN_OUTMOD_7;
+
+    // Make sure the timer is running
+    self->hw->CTL |= TIMER_A_CTL_MC__UP;
 }
 
 void pwm_stop(pwm_t pwm)
 {
+    FW_ASSERT(pwm >= PWM_0 && pwm <= PWM_3, pwm);
+    const PwmRegistration* self = &pwm_registration[pwm];
 
+    // Clear all running flags
+    self->hw->CTL &= ~TIMER_A_CTL_MC_3;
 }
