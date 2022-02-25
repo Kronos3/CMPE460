@@ -174,7 +174,5 @@ void tim_systick_init(U32 arr)
     // 7-0 PRI_12 R/W 0h Priority of system handler 12
     SCB_SHPR3 = (SCB_SHPR3 & 0x00FFFFFF) | 0x40000000;
 
-    tim_systick_set(TRUE);
-
     ENABLE_INTERRUPTS();
 }

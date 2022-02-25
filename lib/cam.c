@@ -10,15 +10,13 @@
 // Run the timer at double the frequency of the clock to set CLK HIGH and LOW
 #define SYS_TICK_FREQUENCY (CAMERA_FREQUENCY * 2)
 
-#define CLK_PORT (GPIO_PORT_5)
-#define CLK_PIN (1 << 4)
-#define SI_PORT (GPIO_PORT_5)
-#define SI_PIN (1 << 5)
+static const GpioPin clk = {GPIO_PORT_5, 1 << 4};
+static const GpioPin si = {GPIO_PORT_5, 1 << 5};
 
 typedef enum
 {
     CAM_IDLE,           //!< Waiting for camera request
-    CAM_EXPOSURE,       //!< During SI pulse
+    CAM_PULSE,          //!< During SI pulse
     CAM_SCAN,           //!< Reading from ADC
 } CameraState;
 
@@ -62,20 +60,20 @@ void cam_init(void)
     tim_systick_init(tim_calculate_arr(TIM32_PSC_1, SYS_TICK_FREQUENCY));
 
     // Initialize the control GPIO pins to general purpose
-    gpio_init(CLK_PORT, CLK_PIN, GPIO_FUNCTION_GENERAL);
-    gpio_init(SI_PORT, SI_PIN, GPIO_FUNCTION_GENERAL);
+    gpio_init(clk, GPIO_FUNCTION_GENERAL);
+    gpio_init(si, GPIO_FUNCTION_GENERAL);
 
     // Both of these control pins are output pins
-    gpio_options(CLK_PORT, CLK_PIN, GPIO_OPTIONS_DIRECTION_OUTPUT);
-    gpio_options(SI_PORT, SI_PIN, GPIO_OPTIONS_DIRECTION_OUTPUT);
+    gpio_options(clk, GPIO_OPTIONS_DIRECTION_OUTPUT);
+    gpio_options(si, GPIO_OPTIONS_DIRECTION_OUTPUT);
 
     // Initialize the ADC to read from the camera
     adc_init();
 }
 
-static void cam_tick_exposure(void)
+static void cam_tick_pulse(void)
 {
-    // The exposure task runs over multiple ticks on the timer
+    // The pulse task runs over multiple ticks on the timer
     // The ticks works as follows:
     //   1. SI Pulse to trigger exposure
     //   2. Clock goes high
@@ -84,18 +82,18 @@ static void cam_tick_exposure(void)
     {
         case 0:
             // Start SI Pulse
-            gpio_output(SI_PORT, SI_PIN, TRUE);
-            gpio_output(CLK_PORT, CLK_PIN, FALSE);
+            gpio_output(si, TRUE);
+            gpio_output(clk, FALSE);
             break;
         case 1:
             // Set clock high
-            gpio_output(SI_PORT, SI_PIN, TRUE);
-            gpio_output(CLK_PORT, CLK_PIN, TRUE);
+            gpio_output(si, TRUE);
+            gpio_output(clk, TRUE);
             break;
         case 2:
             // Stop SI Pulse
-            gpio_output(SI_PORT, SI_PIN, FALSE);
-            gpio_output(CLK_PORT, CLK_PIN, TRUE);
+            gpio_output(si, FALSE);
+            gpio_output(clk, TRUE);
             break;
         default:
             FW_ASSERT(0 && "Invalid exposure index", cam_request.i);
@@ -124,7 +122,7 @@ static void cam_tick_scan(void)
     }
 
     // Toggle the clock signal
-    gpio_output(CLK_PORT, CLK_PIN, cam_request.i % 2);
+    gpio_output(clk, cam_request.i % 2);
 
     // Increment the counter
     cam_request.i++;
@@ -138,7 +136,7 @@ static void cam_tick_scan(void)
         PXX out_buf = (PXX)cam_request.output_buffer;
         GblReply reply_buf = cam_request.reply;
 
-        gpio_output(CLK_PORT, CLK_PIN, FALSE);
+        gpio_output(clk, FALSE);
 
         // Reset the request state
         // Do this before the reply so that another camera
@@ -160,14 +158,13 @@ void cam_irq(void)
         case CAM_IDLE:
             // No running camera requests
             // Stop the systick
-            gpio_output(CLK_PORT, CLK_PIN, FALSE);
-            gpio_output(SI_PORT, SI_PIN, FALSE);
+            gpio_output(clk, FALSE);
+            gpio_output(si, FALSE);
             tim_systick_set(FALSE);
             break;
-        case CAM_EXPOSURE:
-            cam_tick_exposure();
+        case CAM_PULSE:
+            cam_tick_pulse();
             break;
-        // TODO(tumbar) Do we need an 18 cycle wait time between these two?
         case CAM_SCAN:
             cam_tick_scan();
             break;
@@ -184,7 +181,7 @@ void cam_sample(CameraLine dest, GblReply reply)
     cam_request.output_buffer = dest;
     cam_request.reply = reply;
     cam_request.i = 0;
-    cam_request.state = CAM_EXPOSURE;
+    cam_request.state = CAM_PULSE;
 
     // Start sampling from the camera by starting the timer
     tim_systick_set(TRUE);

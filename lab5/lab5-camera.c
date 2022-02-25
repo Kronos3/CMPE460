@@ -34,11 +34,12 @@ static void single_handler(const GblReply* self, GblStatus status)
     const U16* camera_buffer = (const U16*) self->ret[0];
 
     // Print the camera data to the UART
+
     for (U32 i = 0; i < CAMERA_BUF_N; i++)
     {
-        uprintf("%d", camera_buffer[i]);
+        uprintf("%u ", camera_buffer[i]);
     }
-    uprintf("\r\n");
+    uprintf("\r\n\r\n");
 }
 
 static void switch_handler(void)
@@ -57,7 +58,7 @@ static void switch_handler(void)
             {
                 // There is no running request
                 // We need to send a single one
-
+                cam_sample(camera_buf, single_reply);
             }
         }
             break;
@@ -72,7 +73,7 @@ static void switch_handler(void)
 
 int main(void)
 {
-    uart_init(UART_USB, 9600);
+    uart_init(UART_USB, 115200);
     cam_init();
     switch_init(SWITCH_1, SWITCH_INT_PRESS, switch_handler);
 

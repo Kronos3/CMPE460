@@ -3,8 +3,8 @@
 
 
 static void gpio_init_Odd(gpio_port_t port,
-                                U32 pin_mask,
-                                gpio_function_t function)
+                          U32 pin_mask,
+                          gpio_function_t function)
 {
     DIO_PORT_Odd_Interruptable_Type* port_ptr;
     switch(port)
@@ -45,31 +45,29 @@ static void gpio_init_Odd(gpio_port_t port,
     }
 }
 
-void gpio_init(gpio_port_t port,
-               U32 pin_mask,
+void gpio_init(GpioPin pin,
                gpio_function_t function)
 {
-    switch (port)
+    switch (pin.port)
     {
         case GPIO_PORT_1:
         case GPIO_PORT_3:
         case GPIO_PORT_5:
-            gpio_init_Odd(port, pin_mask, function);
+            gpio_init_Odd(pin.port, pin.pin, function);
             break;
         case GPIO_PORT_2:
         case GPIO_PORT_4:
-            FW_ASSERT(0 && "Even ports are not currently supported for GPIO", port);
+            FW_ASSERT(0 && "Even ports are not currently supported for GPIO", pin.port);
         default:
-            FW_ASSERT(0 && "Invalid port", port);
+            FW_ASSERT(0 && "Invalid port", pin.port);
     }
 }
 
-void gpio_options(gpio_port_t port,
-                  U32 pin_mask,
+void gpio_options(GpioPin pin,
                   gpio_options_t options)
 {
     DIO_PORT_Odd_Interruptable_Type* port_ptr;
-    switch(port)
+    switch(pin.port)
     {
         case GPIO_PORT_1:
             port_ptr = P1;
@@ -83,12 +81,12 @@ void gpio_options(gpio_port_t port,
         case GPIO_PORT_2:
         case GPIO_PORT_4:
         default:
-            FW_ASSERT(0 && "This port is not implemented yet", port);
+            FW_ASSERT(0 && "This port is not implemented yet", pin.port);
     }
 
     if (options & GPIO_OPTIONS_HIGH_DRIVE_STRENGTH)
     {
-        port_ptr->DS |= pin_mask;
+        port_ptr->DS |= pin.pin;
     }
 
     FW_ASSERT(!(options & GPIO_OPTIONS_DIRECTION_OUTPUT &&
@@ -96,21 +94,20 @@ void gpio_options(gpio_port_t port,
 
     if (options & GPIO_OPTIONS_DIRECTION_OUTPUT)
     {
-        port_ptr->DIR |= pin_mask;
+        port_ptr->DIR |= pin.pin;
     }
 
     if (options & GPIO_OPTIONS_DIRECTION_INPUT)
     {
-        port_ptr->DIR &= ~pin_mask;
+        port_ptr->DIR &= ~pin.pin;
     }
 }
 
-void gpio_output(gpio_port_t port,
-                 U32 pin_mask,
+void gpio_output(GpioPin pin,
                  bool_t output)
 {
     DIO_PORT_Odd_Interruptable_Type* port_ptr;
-    switch(port)
+    switch(pin.port)
     {
         case GPIO_PORT_1:
             port_ptr = P1;
@@ -124,15 +121,15 @@ void gpio_output(gpio_port_t port,
         case GPIO_PORT_2:
         case GPIO_PORT_4:
         default:
-            FW_ASSERT(0 && "This port is not implemented yet", port);
+            FW_ASSERT(0 && "This port is not implemented yet", pin.port);
     }
 
     if (output)
     {
-        port_ptr->OUT |= pin_mask;
+        port_ptr->OUT |= pin.pin;
     }
     else
     {
-        port_ptr->OUT &= ~pin_mask;
+        port_ptr->OUT &= ~pin.pin;
     }
 }
