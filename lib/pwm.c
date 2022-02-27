@@ -144,19 +144,53 @@ void pwm_init(pwm_t pwm,
     self->hw->CTL |= TIMER_A_CTL_CLR;
 }
 
-void pwm_init_pin(pwm_t pwm, pwm_pin_t pin)
+void pwm_init_pin(pwm_t pwm, pwm_mode_t mode, pwm_pin_t pin)
 {
     FW_ASSERT(pwm >= PWM_0 && pwm <= PWM_3, pwm);
     FW_ASSERT(pin >= PWM_PIN_0 && pin < PWM_PIN_N);
 
     const PwmRegistration* self = &pwm_registration[pwm];
-    gpio_init(self->pins[pin].pin,
-              self->pins[pin].function);
 
+    // Clear out-mode
+    self->hw->CCTL[pin] &= ~TIMER_A_CCTLN_OUTMOD_MASK;
+
+    // Set out mode
+    switch (mode)
+    {
+        case PWM_MODE_OUT:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_0;
+            break;
+        case PWM_MODE_SET:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_1;
+            break;
+        case PWM_MODE_TOGGLE_RESET:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_2;
+            break;
+        case PWM_MODE_SET_RESET:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_3;
+            break;
+        case PWM_MODE_TOGGLE:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_4;
+            break;
+        case PWM_MODE_RESET:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_5;
+            break;
+        case PWM_MODE_TOGGLE_SET:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_6;
+            break;
+        case PWM_MODE_RESET_SET:
+            self->hw->CCTL[pin] |= TIMER_A_CCTLN_OUTMOD_7;
+            break;
+        default:
+            FW_ASSERT(0 && "Invalid PWM mode", mode);
+    }
+
+    // Initialize gpio pins
+    gpio_init(self->pins[pin].pin, self->pins[pin].function);
     gpio_options(self->pins[pin].pin, PWM_PIN_OPTIONS);
 }
 
-void pwm_set(pwm_t pwm, pwm_pin_t pin, F64 duty)
+void pwm_set_pin(pwm_t pwm, pwm_pin_t pin, F64 duty)
 {
     FW_ASSERT(pwm >= PWM_0 && pwm <= PWM_3, pwm);
     FW_ASSERT(pin >= PWM_PIN_0 && pin < PWM_PIN_N);
@@ -166,16 +200,10 @@ void pwm_set(pwm_t pwm, pwm_pin_t pin, F64 duty)
     self->hw->CCR[pin] = (U16)(self->hw->CCR[0] * duty);
 }
 
-void pwm_start(pwm_t pwm, pwm_pin_t pin)
+void pwm_start(pwm_t pwm)
 {
     FW_ASSERT(pwm >= PWM_0 && pwm <= PWM_3, pwm);
-    FW_ASSERT(pin >= PWM_PIN_0 && pin < PWM_PIN_N);
     const PwmRegistration* self = &pwm_registration[pwm];
-
-    // Reset/Set
-    self->hw->CCTL[pin] = TIMER_A_CCTLN_OUTMOD_7;
-
-    // Make sure the timer is running
     self->hw->CTL |= TIMER_A_CTL_MC__UP;
 }
 
@@ -185,5 +213,34 @@ void pwm_stop(pwm_t pwm)
     const PwmRegistration* self = &pwm_registration[pwm];
 
     // Clear all running flags
-    self->hw->CTL &= ~TIMER_A_CTL_MC_3;
+    self->hw->CTL &= ~TIMER_A_CTL_MC_MASK;
+}
+
+void pwm_optimal_prescaler(F64 frequency,
+                           pwm_prescaler_t* psc_1,
+                           pwm_prescaler_t* psc_2)
+{
+    // psc_1 must be a power of 2
+    // psc_2 can be anything between 1 and 8
+    // Important note: The encoding for psc is actually (psc - 1)
+    //                 So a divider of 1 will be encoded as 0
+    for (I32 psc_1_iter = 1; psc_1_iter <= 8; psc_1_iter *= 2)
+    {
+        for (I32 psc_2_iter = 1; psc_2_iter <= 8; psc_2_iter++)
+        {
+            F64 prescaled_clock = (F64)SystemCoreClock / (psc_1_iter * psc_2_iter);
+            F64 count_f = prescaled_clock / frequency;
+            U16 count = (U16)count_f;
+
+            if (count < UINT16_MAX)
+            {
+                // We found our prescalers
+                *psc_1 = (psc_1_iter - 1);
+                *psc_2 = (psc_2_iter - 1);
+                return;
+            }
+        }
+    }
+
+    FW_ASSERT(0 && "Failed to resolve prescalers");
 }

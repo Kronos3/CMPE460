@@ -65,7 +65,12 @@ extern void DebugMon_Handler    (void) __attribute__((weak, alias("Default_Handl
 extern void PendSV_Handler      (void) __attribute__((weak, alias("Default_Handler")));
 
 /* device specific interrupt handler */
+#ifndef __tim_LINKED__
 extern void SysTick_Handler     (void) __attribute__((weak,alias("Default_Handler")));
+#else
+extern void SysTick_Handler     (void);
+#endif
+
 extern void PSS_IRQHandler      (void) __attribute__((weak,alias("Default_Handler")));
 extern void CS_IRQHandler       (void) __attribute__((weak,alias("Default_Handler")));
 extern void PCM_IRQHandler      (void) __attribute__((weak,alias("Default_Handler")));
@@ -91,8 +96,16 @@ extern void EUSCIB1_IRQHandler  (void) __attribute__((weak,alias("Default_Handle
 extern void EUSCIB2_IRQHandler  (void) __attribute__((weak,alias("Default_Handler")));
 extern void EUSCIB3_IRQHandler  (void) __attribute__((weak,alias("Default_Handler")));
 extern void ADC14_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
+
+// tim will override these IRQs
+#ifndef __tim_LINKED__
 extern void T32_INT1_IRQHandler (void) __attribute__((weak,alias("Default_Handler")));
 extern void T32_INT2_IRQHandler (void) __attribute__((weak,alias("Default_Handler")));
+#else
+extern void T32_INT1_IRQHandler (void);
+extern void T32_INT2_IRQHandler (void);
+#endif
+
 extern void T32_INTC_IRQHandler (void) __attribute__((weak,alias("Default_Handler")));
 extern void AES256_IRQHandler   (void) __attribute__((weak,alias("Default_Handler")));
 extern void RTC_C_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));

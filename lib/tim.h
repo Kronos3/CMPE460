@@ -93,9 +93,10 @@ void tim32_reset(tim32_t timer);
 /**
  * Initialize the systick timer to call a function
  * on every interrupt
+ * @param task task to run on systick interrupt
  * @param arr timer period (no prescaler - use tim_calculate_arr(1, freq))
  */
-void tim_systick_init(U32 arr);
+void tim_systick_init(void (*task)(void), U32 arr);
 
 /**
  * Enable or disable the SYSTICK timer

@@ -57,7 +57,9 @@ void cam_init(void)
 
     // Run the systick timer twice as fast as the clock frequency
     // We need double to set the CLK signal low and high
-    tim_systick_init(tim_calculate_arr(TIM32_PSC_1, SYS_TICK_FREQUENCY));
+    tim_systick_init(
+            cam_irq,
+            tim_calculate_arr(TIM32_PSC_1, SYS_TICK_FREQUENCY));
 
     // Initialize the control GPIO pins to general purpose
     gpio_init(clk, GPIO_FUNCTION_GENERAL);

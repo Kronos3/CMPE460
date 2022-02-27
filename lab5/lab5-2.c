@@ -1,20 +1,19 @@
 #include <adc.h>
 #include <uartlib.h>
-#include <tim.h>
 #include <switch.h>
 
 // 20mv per degree celsius
-#define V_PER_C (0.020)
+#define V_PER_C (0.010)
 
 // 500 mv at 25C
-#define V_ZERO_OFFSET (0.500)
+#define V_ZERO_OFFSET (0.750)
 
 // 25 C is base voltage
 #define C_ZERO_OFFSET (25.0)
 
 static F64 to_temp_c(F64 voltage)
 {
-    return ((voltage - V_ZERO_OFFSET) * V_PER_C) + C_ZERO_OFFSET;
+    return ((voltage - V_ZERO_OFFSET) / V_PER_C) + C_ZERO_OFFSET;
 }
 
 static F64 c_to_f(F64 celsius)
@@ -22,7 +21,7 @@ static F64 c_to_f(F64 celsius)
     return celsius * (9.0 / 5.0) + 32.0;
 }
 
-static void task(void)
+static void get_temp(void)
 {
     U32 adc_raw = adc_in();
     F64 voltage = adc_voltage(adc_raw);
@@ -38,20 +37,9 @@ static void task(void)
             c, f);
 }
 
-static void switch_handler(void)
-{
-    // Toggle the timer to start/stop triggering the ADC
-    static bool_t timer_state = FALSE;
-    timer_state = !timer_state;
-    tim32_set(TIM32_1, timer_state);
-}
-
 int main(void)
 {
     uart_init(UART_USB, 9600);
     adc_init();
-    tim32_init(TIM32_1, task,
-               tim_calculate_arr(TIM32_PSC_1, 0.5),
-               TIM32_PSC_1, TIM32_MODE_PERIODIC);
-    switch_init(SWITCH_1, SWITCH_INT_PRESS, switch_handler);
+    switch_init(SWITCH_1, SWITCH_INT_PRESS, get_temp);
 }

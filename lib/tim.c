@@ -15,6 +15,8 @@ static struct Timer32
         {NULL, TIMER32_2, 0, 1 << 26},
 };
 
+static void (* systick_task)(void) = NULL;
+
 void tim32_init(tim32_t timer,
                 void (* task)(void),
                 U32 arr,
@@ -105,6 +107,14 @@ void T32_INT2_IRQHandler(void)
     t32_int_common(TIM32_2);
 }
 
+void SysTick_Handler(void)
+{
+    if (systick_task)
+    {
+        systick_task();
+    }
+}
+
 U32 tim_calculate_arr(U32 prescaler, F64 hz)
 {
     return (U32) (((F64) SystemCoreClock / (F64) prescaler) / hz);
@@ -151,7 +161,7 @@ void tim_systick_set(bool_t enabled)
     }
 }
 
-void tim_systick_init(U32 arr)
+void tim_systick_init(void (*task)(void), U32 arr)
 {
     DISABLE_INTERRUPTS();
 
@@ -173,6 +183,9 @@ void tim_systick_init(U32 arr)
     // 15-8 PRI_13 R/W 0h Priority of system handler 13.
     // 7-0 PRI_12 R/W 0h Priority of system handler 12
     SCB_SHPR3 = (SCB_SHPR3 & 0x00FFFFFF) | 0x40000000;
+
+    // Register the task
+    systick_task = task;
 
     ENABLE_INTERRUPTS();
 }

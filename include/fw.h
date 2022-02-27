@@ -75,6 +75,8 @@ __attribute__((noreturn)) void fw_assertion_failure(const char* file, U32 line, 
     if (!(expr)) fw_assertion_failure(__FILE__, __LINE__, #expr, COUNT_ARGUMENTS(__VA_ARGS__), ##__VA_ARGS__);   \
 } while(0)
 
+#define FW_ABS(x_) ((x_) < 0 ? -(x_) : (x_))
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif

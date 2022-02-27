@@ -5,13 +5,6 @@
 // Buffers to swap between image acquisition and processing
 static CameraLine camera_buf;
 
-// We need to expose SysTick_Handler here so that
-// the weak reference is overridden
-void SysTick_Handler(void)
-{
-    cam_irq();
-}
-
 #define EXPOSURE_TIME (10e-3)
 
 static volatile bool_t put_data = 0;
