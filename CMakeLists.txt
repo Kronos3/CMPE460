@@ -16,47 +16,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 project(CMPE460 C ASM)
 set(CMAKE_C_STANDARD 99)
 
-set(SDK_PATH /opt/ti/simplelink_msp432p4_sdk_3_40_01_02/)
-set(COMMON_PATH ${CMAKE_CURRENT_LIST_DIR}/common)
-
-include_directories(
-        ${CMAKE_CURRENT_LIST_DIR}/include
-        ${CMAKE_CURRENT_LIST_DIR}/include/sys/CMSIS
-        ${CMAKE_CURRENT_LIST_DIR}/include/sys/msp
-)
-
-add_compile_definitions(
-        __MSP432P401R__
-        DeviceFamily_MSP432P401x
-)
-
-add_compile_options(
-        -mcpu=cortex-m4
-        -march=armv7e-m
-        -mthumb
-        -mfloat-abi=hard
-        -mfpu=fpv4-sp-d16
-        -ffunction-sections
-        -fdata-sections
-        -g
-        -gstrict-dwarf
-        -Wall
-)
-
-link_directories(${SDK_PATH}/source)
-
-add_link_options(
-        -Wl,-T,${COMMON_PATH}/msp432p401r.lds
-        -march=armv7e-m
-        -mthumb
-        -mfloat-abi=hard
-        -mfpu=fpv4-sp-d16
-        -static
-        -Wl,--gc-sections
-        --specs=nano.specs
-)
-
-include(${COMMON_PATH}/common.cmake)
+include(msp432/platform.cmake)
 
 add_subdirectory(lib)
 add_subdirectory(os)
