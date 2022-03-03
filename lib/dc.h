@@ -2,7 +2,7 @@
 #define CMPE460_DC_H
 
 #include <fw.h>
-#include <pwm.h>
+#include <drv/pwm.h>
 
 #ifndef __dc_LINKED__
 #error "You need to link 'dc' to use this header"
@@ -18,21 +18,24 @@ typedef enum
 /**
  * Configure a DC motor channel to operate with PWM
  * @param dc DC channel to configure
- * @param pwm_channel pwm channel to use
- * @param pwm_pin_forward forward pin to use on this pwm channel
- * @param pwm_pin_backward backward pin to use on this pwm channel
+ * @param pwm_pin_forward PWM pin to use for forward drive
+ * @param pwm_pin_backward PWM pin to use for backward drive
  * @param base_frequency base pwm frequency
  */
 void dc_cfg(dc_t dc,
-            pwm_t pwm_channel,
-            pwm_pin_t pwm_pin_forward,
-            pwm_pin_t pwm_pin_backward,
+            PwmPin pwm_pin_forward,
+            PwmPin pwm_pin_backward,
             F64 base_frequency);
 
 /**
  * Run DC initialization after all dc_cfg() calls have been run
  */
 void dc_init(void);
+
+/**
+ * Start pwm running the configured dc motors
+ */
+void dc_start(void);
 
 /**
  * Run a motor at a certain speed

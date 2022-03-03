@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdarg.h>
-#include <gbl.h>
+#include <lib/gbl.h>
 
 GblReply gbl_reply_init(GblReplyCb cb, U32 n, ...)
 {

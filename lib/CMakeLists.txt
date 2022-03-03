@@ -1,28 +1,13 @@
-function(gen_library name)
-    add_library(${name} STATIC ${ARGN})
-    target_include_directories(${name} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-    target_compile_definitions(${name} PUBLIC __${name}_LINKED__)
-    if (NOT "${name}" STREQUAL "gbl")
-        target_link_libraries(${name} gbl)
-    endif()
-endfunction()
-
 gen_library(gbl gbl.c gbl.h)
-gen_library(gpio gpio.c gpio.h)
-gen_library(uart uart.c uart.h)
-gen_library(led led.c led.h)
-target_link_libraries(led gpio)
-gen_library(i2c i2c.c i2c.h)
+
 gen_library(oled oled.c oled.h)
 target_link_libraries(oled i2c)
-gen_library(switch switch.c switch.h)
+
 gen_library(uartlib uartlib.c uartlib.h)
 target_link_libraries(uartlib uart)
-gen_library(tim tim.c tim.h)
-gen_library(adc adc.c adc.h)
+
 gen_library(cam cam.c cam.h)
-target_link_libraries(cam adc tim gpio)
-gen_library(pwm pwm.c pwm.h)
-target_link_libraries(pwm gpio)
+target_link_libraries(cam adc tim gbl gpio)
+
 gen_library(dc dc.c dc.h)
 target_link_libraries(dc pwm)

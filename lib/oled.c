@@ -1,6 +1,7 @@
 #include <string.h>
-#include <oled.h>
-#include <i2c.h>
+
+#include <drv/i2c.h>
+#include <lib/oled.h>
 
 typedef enum
 {

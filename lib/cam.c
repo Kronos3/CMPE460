@@ -1,7 +1,6 @@
-#include <cam.h>
-#include <tim.h>
-#include <gpio.h>
-#include <adc.h>
+#include <lib/cam.h>
+#include <drv/gpio.h>
+#include <drv/adc.h>
 #include <string.h>
 
 // Run the camera clock at 100kHz
@@ -10,15 +9,20 @@
 // Run the timer at double the frequency of the clock to set CLK HIGH and LOW
 #define SYS_TICK_FREQUENCY (CAMERA_FREQUENCY * 2)
 
-static const GpioPin clk = {GPIO_PORT_5, 1 << 4};
-static const GpioPin si = {GPIO_PORT_5, 1 << 5};
-
 typedef enum
 {
     CAM_IDLE,           //!< Waiting for camera request
     CAM_PULSE,          //!< During SI pulse
     CAM_SCAN,           //!< Reading from ADC
 } CameraState;
+
+static struct
+{
+    GpioPin clk;
+    GpioPin si;
+    tim_t clk_timer;
+    tim_t si_timer;
+} cam_settings;
 
 static struct
 {
@@ -49,21 +53,23 @@ static void cam_clear_process(void)
     gbl_reply_clear(&cam_process_state.reply);
 }
 
-void cam_init(void)
+void cam_init(GpioPin clk, GpioPin si, tim_t clk_timer)
 {
+    cam_settings.clk = clk;
+    cam_settings.si = si;
+    cam_settings.clk_timer = clk_timer;
+
     // Initialize the camera request memory
     cam_clear_request();
     cam_clear_process();
 
     // Run the systick timer twice as fast as the clock frequency
     // We need double to set the CLK signal low and high
-    tim_systick_init(
-            cam_irq,
-            tim_calculate_arr(TIM32_PSC_1, SYS_TICK_FREQUENCY));
+    tim_init(cam_settings.clk_timer, cam_irq, SYS_TICK_FREQUENCY);
 
     // Initialize the control GPIO pins to general purpose
-    gpio_init(clk, GPIO_FUNCTION_GENERAL);
-    gpio_init(si, GPIO_FUNCTION_GENERAL);
+    gpio_init(cam_settings.clk, GPIO_FUNCTION_GENERAL);
+    gpio_init(cam_settings.si, GPIO_FUNCTION_GENERAL);
 
     // Both of these control pins are output pins
     gpio_options(clk, GPIO_OPTIONS_DIRECTION_OUTPUT);
@@ -84,18 +90,18 @@ static void cam_tick_pulse(void)
     {
         case 0:
             // Start SI Pulse
-            gpio_output(si, TRUE);
-            gpio_output(clk, FALSE);
+            gpio_output(cam_settings.si, TRUE);
+            gpio_output(cam_settings.clk, FALSE);
             break;
         case 1:
             // Set clock high
-            gpio_output(si, TRUE);
-            gpio_output(clk, TRUE);
+            gpio_output(cam_settings.si, TRUE);
+            gpio_output(cam_settings.clk, TRUE);
             break;
         case 2:
             // Stop SI Pulse
-            gpio_output(si, FALSE);
-            gpio_output(clk, TRUE);
+            gpio_output(cam_settings.si, FALSE);
+            gpio_output(cam_settings.clk, TRUE);
             break;
         default:
             FW_ASSERT(0 && "Invalid exposure index", cam_request.i);
@@ -125,7 +131,7 @@ static void cam_tick_scan(void)
     }
 
     // Toggle the clock signal
-    gpio_output(clk, cam_request.i % 2);
+    gpio_output(cam_settings.clk, cam_request.i % 2);
 
     // Increment the counter
     cam_request.i++;
@@ -139,7 +145,7 @@ static void cam_tick_scan(void)
         PXX out_buf = (PXX)cam_request.output_buffer;
         GblReply reply_buf = cam_request.reply;
 
-        gpio_output(clk, FALSE);
+        gpio_output(cam_settings.clk, FALSE);
 
         // Reset the request state
         // Do this before the reply so that another camera
@@ -161,9 +167,9 @@ void cam_irq(void)
         case CAM_IDLE:
             // No running camera requests
             // Stop the systick
-            gpio_output(clk, FALSE);
-            gpio_output(si, FALSE);
-            tim_systick_set(FALSE);
+            gpio_output(cam_settings.clk, FALSE);
+            gpio_output(cam_settings.si, FALSE);
+            tim_stop(cam_settings.clk_timer);
             break;
         case CAM_PULSE:
             cam_tick_pulse();
@@ -187,7 +193,7 @@ void cam_sample(CameraLine dest, GblReply reply)
     cam_request.state = CAM_PULSE;
 
     // Start sampling from the camera by starting the timer
-    tim_systick_set(TRUE);
+    tim_start(SYSTICK);
 }
 
 /**
@@ -203,18 +209,20 @@ static void camera_process_handler()
                cam_process_state.reply);
 }
 
-void cam_process(CameraLine dest, F64 integration_period, GblReply reply)
+void cam_process(CameraLine dest,
+                 F64 integration_period,
+                 tim_t si_timer,
+                 GblReply reply)
 {
     DISABLE_INTERRUPTS();
 
-    // Disable both of the timers
-    tim_systick_set(FALSE);
-    tim32_set(TIM32_1, FALSE);
+    cam_settings.si_timer = si_timer;
 
-    tim32_init(TIM32_1, camera_process_handler,
-               tim_calculate_arr(TIM32_PSC_1, 1/integration_period),
-               TIM32_PSC_1,
-               TIM32_MODE_PERIODIC);
+    // Disable both of the timers
+    tim_stop(cam_settings.clk_timer);
+    tim_stop(cam_settings.si_timer);
+
+    tim_init(si_timer, camera_process_handler, 1 / integration_period);
 
     FW_ASSERT(dest);
 
@@ -227,13 +235,13 @@ void cam_process(CameraLine dest, F64 integration_period, GblReply reply)
 void cam_process_start(void)
 {
     FW_ASSERT(cam_process_state.output_buffer && "No process initialized");
-    tim32_set(TIM32_1, TRUE);
+    tim_start(cam_settings.si_timer);
 }
 
 bool_t cam_process_stop(GblReply reply_on_cancel)
 {
     FW_ASSERT(cam_process_state.output_buffer && "No process running");
-    tim32_set(TIM32_1, FALSE);
+    tim_stop(cam_settings.si_timer);
 
     if (cam_request.state == CAM_IDLE)
     {

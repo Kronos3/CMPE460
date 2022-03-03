@@ -2,7 +2,7 @@
 #define CMPE460_UARTLIB_H
 
 #include <stdarg.h>
-#include <uart.h>
+#include <drv/uart.h>
 
 // Defines which UART to use for printf
 #ifndef UART_IO

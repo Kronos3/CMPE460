@@ -1,7 +1,10 @@
 #ifndef CMPE460_CAM_H
 #define CMPE460_CAM_H
 
-#include <gbl.h>
+#include <lib/gbl.h>
+
+#include <drv/tim.h>
+#include <drv/gpio.h>
 
 #ifndef __cam_LINKED__
 #error "You need to link 'cam' to use this header"
@@ -17,7 +20,7 @@ typedef U16 CameraLine[CAMERA_BUF_N];
 /**
  * Initialize the peripherals to drive the camera
  */
-void cam_init(void);
+void cam_init(GpioPin clk, GpioPin si, tim_t clk_timer);
 
 /**
  * Read samples from the camera
@@ -38,7 +41,10 @@ void cam_irq(void);
  * @param integration_period time to integrate each image on the camera
  * @param reply reply to call each time an image is ready
  */
-void cam_process(CameraLine dest, F64 integration_period, GblReply reply);
+void cam_process(CameraLine dest,
+                 F64 integration_period,
+                 tim_t si_timer,
+                 GblReply reply);
 
 /**
  * Start the camera process
