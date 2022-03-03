@@ -7,7 +7,7 @@
 #define CAMERA_FREQUENCY (100000.0)
 
 // Run the timer at double the frequency of the clock to set CLK HIGH and LOW
-#define SYS_TICK_FREQUENCY (CAMERA_FREQUENCY * 2)
+#define CLK_TOGGLE_FREQUENCY (CAMERA_FREQUENCY * 2)
 
 typedef enum
 {
@@ -65,7 +65,7 @@ void cam_init(GpioPin clk, GpioPin si, tim_t clk_timer)
 
     // Run the systick timer twice as fast as the clock frequency
     // We need double to set the CLK signal low and high
-    tim_init(cam_settings.clk_timer, cam_irq, SYS_TICK_FREQUENCY);
+    tim_init(cam_settings.clk_timer, cam_irq, CLK_TOGGLE_FREQUENCY);
 
     // Initialize the control GPIO pins to general purpose
     gpio_init(cam_settings.clk, GPIO_FUNCTION_GENERAL);
@@ -155,8 +155,7 @@ static void cam_tick_scan(void)
         // Send the reply
         gbl_reply_ret(&reply_buf,
                       GBL_STATUS_SUCCESS,
-                      1,
-                      out_buf);
+                      1, out_buf);
     }
 }
 
@@ -193,7 +192,7 @@ void cam_sample(CameraLine dest, GblReply reply)
     cam_request.state = CAM_PULSE;
 
     // Start sampling from the camera by starting the timer
-    tim_start(SYSTICK);
+    tim_start(cam_settings.clk_timer);
 }
 
 /**

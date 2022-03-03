@@ -40,6 +40,7 @@ static inline void uart_put_udec(
         uart_putchar(uart, *(--stack_position));
     }
 }
+
 static inline void uart_put_dec(
         uart_t uart, int i,
         char pad_char, U8 pad_amt)
@@ -147,8 +148,6 @@ I32 uvfprintf(
     return iter - format;
 }
 
-
-
 I32 uprintf(const char* fmt, ...)
 {
     va_list args;
@@ -157,7 +156,6 @@ I32 uprintf(const char* fmt, ...)
     va_end(args);
     return out;
 }
-
 
 int ufprintf(uart_t uart, const char* fmt, ...)
 {
