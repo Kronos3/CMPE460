@@ -2,15 +2,13 @@
 #include <msp.h>
 #include <nvic.h>
 
-#define TIM32_N (2)
-
 static struct Timer32
 {
     void (* task)(void);
     Timer32_Type* const timer;
     U32 arr;
     const U32 interrupt_nvic;
-} timer32_table[TIM32_N] = {
+} timer32_table[MSP432_TIM32_N] = {
         {NULL, TIMER32_1, 0, 1 << 25},
         {NULL, TIMER32_2, 0, 1 << 26},
 };
@@ -24,7 +22,7 @@ void msp432_tim32_init(msp432_tim32_t timer,
                        msp432_tim32_mode_t mode)
 {
     // Make sure a TIM32 was selected
-    FW_ASSERT(timer < TIM32_N, timer);
+    FW_ASSERT(timer < MSP432_TIM32_N, timer);
     struct Timer32* t = &timer32_table[timer];
 
     DISABLE_INTERRUPTS();
@@ -143,7 +141,7 @@ U32 msp432_tim_calculate_arr(msp432_tim32_psc_t prescaler, F64 hz)
 void msp432_tim32_set(msp432_tim32_t timer, bool_t enabled)
 {
     // Make sure a TIM32 was selected
-    FW_ASSERT(timer < TIM32_N, timer);
+    FW_ASSERT(timer < MSP432_TIM32_N, timer);
     struct Timer32* t = &timer32_table[timer];
 
     if (enabled) t->timer->CONTROL |= TIMER32_CONTROL_ENABLE;
@@ -158,7 +156,7 @@ U32 msp432_tim32_get(msp432_tim32_t timer)
 void msp432_tim32_reset(msp432_tim32_t timer)
 {
     // Make sure a TIM32 was selected
-    FW_ASSERT(timer < TIM32_N, timer);
+    FW_ASSERT(timer < MSP432_TIM32_N, timer);
     struct Timer32* t = &timer32_table[timer];
     t->timer->LOAD = t->arr;
 }
@@ -212,13 +210,13 @@ void tim_init(tim_t timer, void (*task)(void), F64 hz)
         case TIM32_1:
             tim32_psc = msp432_tim32_calculate_prescaler(hz);
             msp432_tim32_init(MSP432_TIM32_1, task,
-                              tim32_psc, msp432_tim_calculate_arr(tim32_psc, hz),
+                              msp432_tim_calculate_arr(tim32_psc, hz), tim32_psc,
                               MSP432_TIM32_MODE_PERIODIC);
             break;
         case TIM32_2:
             tim32_psc = msp432_tim32_calculate_prescaler(hz);
             msp432_tim32_init(MSP432_TIM32_2, task,
-                              tim32_psc, msp432_tim_calculate_arr(tim32_psc, hz),
+                              msp432_tim_calculate_arr(tim32_psc, hz), tim32_psc,
                               MSP432_TIM32_MODE_PERIODIC);
             break;
         case SYSTICK:

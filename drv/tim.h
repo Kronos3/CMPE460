@@ -1,12 +1,14 @@
 #ifndef CMPE460_TIM_H
 #define CMPE460_TIM_H
 
+#include <fw.h>
+
 #ifndef __tim_LINKED__
 #error "You need to link 'tim' to use this header"
 #endif
 
-#ifdef __RPI_ZERO__
-#include "rpi_zero/tim.h"
+#ifdef __BCM2835__
+#include "bcm2835/tim.h"
 #elif defined(__MSP432P401R__)
 #include "msp432p401r/tim.h"
 #endif

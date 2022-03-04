@@ -7,8 +7,8 @@
 #error "You need to link 'gpio' to use this header"
 #endif
 
-#ifdef __RPI_ZERO__
-#include "rpi_zero/plat_gpio.h"
+#ifdef __BCM2835__
+#include "bcm2835/gpio.h"
 #elif defined(__MSP432P401R__)
 #include "msp432p401r/gpio.h"
 #endif
@@ -18,16 +18,14 @@
  * @param pin pin or set of pins to initialize
  * @param function function to initialize pins to
  */
-void gpio_init(GpioPin pin,
-               gpio_function_t function);
+void gpio_init(GpioPin pin, gpio_function_t function);
 
 /**
  * Set up more options on a set of pins
  * @param pin pin or set of pins to set options for
  * @param options options to set
  */
-void gpio_options(GpioPin pin,
-                  gpio_options_t options);
+void gpio_options(GpioPin pin, gpio_options_t options);
 
 /**
  * Set a GPIO pin to a value

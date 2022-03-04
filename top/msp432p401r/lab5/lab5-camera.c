@@ -44,6 +44,15 @@ int main(void)
 
     GpioPin clk = GPIO_PIN(5, 4);
     GpioPin si = GPIO_PIN(5, 5);
+
+    // Initialize the control GPIO pins to general purpose
+    gpio_init(clk, GPIO_FUNCTION_GENERAL);
+    gpio_init(si, GPIO_FUNCTION_GENERAL);
+
+    // Both of these control pins are output pins
+    gpio_options(clk, GPIO_OPTIONS_DIRECTION_OUTPUT);
+    gpio_options(si, GPIO_OPTIONS_DIRECTION_OUTPUT);
+
     cam_init(clk, si, TIM32_1);
     switch_init(SWITCH_1, SWITCH_INT_PRESS, switch_handler);
 

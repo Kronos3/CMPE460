@@ -16,6 +16,7 @@ typedef enum
 {
     MSP432_TIM32_1,
     MSP432_TIM32_2,
+    MSP432_TIM32_N
 } msp432_tim32_t;
 
 typedef enum

@@ -20,7 +20,7 @@ typedef unsigned int U32;
 typedef float F32;
 typedef double F64;
 
-#define COMPILE_ASSERT(expr, name) typedef char __compile_assert_##name[(expr) ? 0 : -1]
+#define COMPILE_ASSERT(expr, name) enum { __compile_assert_##name = 1 / ((expr) ? 1 : 0) }
 
 // Check that the compiler agrees with our defines
 COMPILE_ASSERT(sizeof(I8) == 1, sizeof_i8);
@@ -52,6 +52,14 @@ typedef U64 PXX;
 
 #ifndef INT32_MAX
 #define INT32_MAX (0x7FFFFFFF)
+#endif
+
+#ifndef UINT16_MAX
+#define UINT16_MAX (0xFFFF)
+#endif
+
+#ifndef INT16_MAX
+#define INT16_MAX (0x7FFF)
 #endif
 
 typedef enum
@@ -92,6 +100,14 @@ __attribute__((noreturn)) void fw_assertion_failure(const char* file, U32 line, 
 #define M_PI 3.14159265358979323846264338327950288
 #endif
 #define SQR(x) ((x)*(x))
+
+#ifndef offsetof
+#ifdef __builtin_offsetof
+#define offsetof __builtin_offsetof
+#else
+#define offsetof(st_, f_) ((PXX)&(((st_ *)0)->f_))
+#endif
+#endif
 
 /**
  * Mask all interrupts on the CPU

@@ -1,7 +1,6 @@
 #include <lib/cam.h>
 #include <drv/gpio.h>
 #include <drv/adc.h>
-#include <string.h>
 
 // Run the camera clock at 100kHz
 #define CAMERA_FREQUENCY (100000.0)
@@ -66,14 +65,6 @@ void cam_init(GpioPin clk, GpioPin si, tim_t clk_timer)
     // Run the systick timer twice as fast as the clock frequency
     // We need double to set the CLK signal low and high
     tim_init(cam_settings.clk_timer, cam_irq, CLK_TOGGLE_FREQUENCY);
-
-    // Initialize the control GPIO pins to general purpose
-    gpio_init(cam_settings.clk, GPIO_FUNCTION_GENERAL);
-    gpio_init(cam_settings.si, GPIO_FUNCTION_GENERAL);
-
-    // Both of these control pins are output pins
-    gpio_options(clk, GPIO_OPTIONS_DIRECTION_OUTPUT);
-    gpio_options(si, GPIO_OPTIONS_DIRECTION_OUTPUT);
 
     // Initialize the ADC to read from the camera
     adc_init();

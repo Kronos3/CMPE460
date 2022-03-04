@@ -14,46 +14,46 @@ typedef struct PwmRegistration_prv
 } PwmRegistration;
 
 static const PwmRegistration pwm_registration[] = {
+    {
+        TIMER_A0,
         {
-            TIMER_A0,
-            {
-                {GPIO_PIN(7, 3), GPIO_FUNCTION_PRIMARY},
-                {GPIO_PIN(2, 4), GPIO_FUNCTION_PRIMARY},
-                {GPIO_PIN(2, 5), GPIO_FUNCTION_PRIMARY},
-                {GPIO_PIN(2, 6), GPIO_FUNCTION_PRIMARY},
-                {GPIO_PIN(2, 7), GPIO_FUNCTION_PRIMARY},
-            },
+            {GPIO_PIN(7, 3), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(2, 4), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(2, 5), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(2, 6), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(2, 7), GPIO_FUNCTION_PRIMARY},
         },
+    },
+    {
+        TIMER_A1,
         {
-            TIMER_A1,
-            {
-                    {GPIO_PIN(8, 0), GPIO_FUNCTION_SECONDARY},
-                    {GPIO_PIN(7, 7), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(7, 6), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(7, 5), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(7, 4), GPIO_FUNCTION_PRIMARY},
-            },
+            {GPIO_PIN(8, 0), GPIO_FUNCTION_SECONDARY},
+            {GPIO_PIN(7, 7), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(7, 6), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(7, 5), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(7, 4), GPIO_FUNCTION_PRIMARY},
         },
+    },
+    {
+        TIMER_A2,
         {
-            TIMER_A2,
-            {
-                    {GPIO_PIN(8, 1), GPIO_FUNCTION_SECONDARY},
-                    {GPIO_PIN(5, 6), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(5, 7), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(6, 6), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(6, 7), GPIO_FUNCTION_PRIMARY},
-            },
+            {GPIO_PIN(8, 1), GPIO_FUNCTION_SECONDARY},
+            {GPIO_PIN(5, 6), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(5, 7), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(6, 6), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(6, 7), GPIO_FUNCTION_PRIMARY},
         },
+    },
+    {
+        TIMER_A3,
         {
-            TIMER_A3,
-            {
-                    {GPIO_PIN(10, 4), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(10, 5), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(8, 2), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(9, 2), GPIO_FUNCTION_PRIMARY},
-                    {GPIO_PIN(9, 3), GPIO_FUNCTION_PRIMARY},
-            },
+            {GPIO_PIN(10, 4), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(10, 5), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(8, 2), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(9, 2), GPIO_FUNCTION_PRIMARY},
+            {GPIO_PIN(9, 3), GPIO_FUNCTION_PRIMARY},
         },
+    },
 };
 
 void pwm_init(PwmPin pwm, F64 rate)
@@ -134,13 +134,6 @@ void pwm_init(PwmPin pwm, F64 rate)
     // Set total period
     self->hw->CCR[0] = count;
 
-    for (msp432_pwm_pin_t i = MSP432_PWM_PIN_1; i < MSP432_PWM_PIN_N; i++)
-    {
-        // Disable pin output until pwm is started
-        // Set the pin low as well
-        self->hw->CCTL[i] = TIMER_A_CCTLN_OUTMOD_0;
-    }
-
     // Load the prescaler and the settings
     // Don't start the clock yet
     self->hw->CTL |= TIMER_A_CTL_CLR;
@@ -154,6 +147,9 @@ void msp432_pwm_init_pin(PwmPin pin, msp432_pwm_mode_t mode)
     FW_ASSERT(pin.pin >= MSP432_PWM_PIN_0 && pin.pin < MSP432_PWM_PIN_N);
 
     const PwmRegistration* self = &pwm_registration[pin.channel];
+
+    // Place in compare + no interrupt
+    self->hw->CCTL[pin.pin] &= ~(TIMER_A_CCTLN_CAP | TIMER_A_CCTLN_CCIE);
 
     // Clear out-mode
     self->hw->CCTL[pin.pin] &= ~TIMER_A_CCTLN_OUTMOD_MASK;

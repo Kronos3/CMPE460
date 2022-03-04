@@ -48,6 +48,8 @@ void dc_start(void)
         if (dc_profiles[dc].configured)
         {
             dc_set(dc, 0.0);
+            pwm_start(dc_profiles[dc].forward);
+            pwm_start(dc_profiles[dc].backward);
         }
     }
 }

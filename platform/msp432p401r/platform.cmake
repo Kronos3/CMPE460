@@ -26,11 +26,7 @@ add_compile_definitions(
 )
 
 add_compile_options(
-        -mcpu=cortex-m4
-        -march=armv7e-m
-        -mthumb
-        -mfloat-abi=hard
-        -mfpu=fpv4-sp-d16
+        -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
         -ffunction-sections
         -fdata-sections
         -g
@@ -42,10 +38,7 @@ link_directories(${SDK_PATH}/source)
 
 add_link_options(
         -Wl,-T,${LINKER_SCRIPT}
-        -march=armv7e-m
-        -mthumb
-        -mfloat-abi=hard
-        -mfpu=fpv4-sp-d16
+        -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
         -static
         -Wl,--gc-sections
         --specs=nano.specs
