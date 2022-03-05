@@ -1,3 +1,4 @@
+#include <bcm2835_int.h>
 #include <drv/bcm2835/bcm2835.h>
 #include <drv/tim.h>
 #include <drv/bcm2835/tim.h>
@@ -65,6 +66,29 @@ COMPILE_ASSERT(
 
 static bool_t global_initialized = FALSE;
 
+static void arm_timer_interrupt_irq(U32 irq)
+{
+    (void) irq;
+    for (U32 i = 0; i < TIM_N; i++)
+    {
+        if (virtual_timer.timers[i].running)
+        {
+            if (!--virtual_timer.timers[i].value)
+            {
+                if (virtual_timer.timers[i].task)
+                {
+                    virtual_timer.timers[i].task();
+                }
+
+                virtual_timer.timers[i].value = virtual_timer.timers[i].reload;
+            }
+        }
+    }
+
+    // Clear the interrupt
+    ARM_TIMER->IRQ_CLR_ACK = 0x1;
+}
+
 static void global_init(void)
 {
     if (global_initialized)
@@ -76,6 +100,10 @@ static void global_init(void)
     ARM_TIMER->RELOAD = BCM2835_CORE_CLK_HZ / BCM2835_TIMER_BASE_FREQ;
 
     global_initialized = TRUE;
+
+    // Set up the interrupt in the IRQ table
+    bcm2835_interrupt_register(BCM2835_IRQ_ID_TIMER_0, arm_timer_interrupt_irq);
+    bcm2835_interrupt_enable(BCM2835_IRQ_ID_TIMER_0);
 }
 
 void tim_init(tim_t timer, void (*task)(void), F64 hz)
@@ -100,13 +128,13 @@ void tim_start(tim_t timer)
     FW_ASSERT(virtual_timer.timers[timer].configured && "Timer not initialized",
               timer);
 
-    virtual_timer.timers[timer].value = virtual_timer.timers[timer].reload;
+    virtual_timer.timers[timer].value = 1;
     virtual_timer.timers[timer].running = TRUE;
 
     if (virtual_timer.running_n++ == 0)
     {
         // No timers are running yet meaning
-        // the physical timer should be stopped
+        // the physical timer should be started
 
         // Reset the counter
         ARM_TIMER->LOAD = ARM_TIMER->RELOAD;

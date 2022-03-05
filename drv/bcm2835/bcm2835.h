@@ -855,7 +855,7 @@ extern "C" {
 /// \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
 /// \return the value read from the 32 bit register
 /// \sa Physical Addresses
-extern U32 bcm2835_peri_read(const volatile U32* paddr);
+//extern U32 bcm2835_peri_read(const volatile U32* paddr);
 
 
 /// Reads 32 bit value from a peripheral address without the read barrier
@@ -864,7 +864,7 @@ extern U32 bcm2835_peri_read(const volatile U32* paddr);
 /// \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
 /// \return the value read from the 32 bit register
 /// \sa Physical Addresses
-extern U32 bcm2835_peri_read_nb(const volatile U32* paddr);
+//extern U32 bcm2835_peri_read_nb(const volatile U32* paddr);
 
 
 /// Writes 32 bit value from a peripheral address
@@ -873,7 +873,7 @@ extern U32 bcm2835_peri_read_nb(const volatile U32* paddr);
 /// \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
 /// \param[in] value The 32 bit value to write
 /// \sa Physical Addresses
-extern void bcm2835_peri_write(volatile U32* paddr, U32 value);
+//extern void bcm2835_peri_write(volatile U32* paddr, U32 value);
 
 /// Writes 32 bit value from a peripheral address without the write barrier
 /// You should only use this when your code has previously called bcm2835_peri_write()
@@ -881,7 +881,7 @@ extern void bcm2835_peri_write(volatile U32* paddr, U32 value);
 /// \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
 /// \param[in] value The 32 bit value to write
 /// \sa Physical Addresses
-extern void bcm2835_peri_write_nb(volatile U32* paddr, U32 value);
+//extern void bcm2835_peri_write_nb(volatile U32* paddr, U32 value);
 
 /// Alters a number of bits in a 32 peripheral regsiter.
 /// It reads the current valu and then alters the bits deines as 1 in mask,
@@ -894,7 +894,7 @@ extern void bcm2835_peri_write_nb(volatile U32* paddr, U32 value);
 /// \param[in] value The 32 bit value to write, masked in by mask.
 /// \param[in] mask Bitmask that defines the bits that will be altered in the register.
 /// \sa Physical Addresses
-extern void bcm2835_peri_set_bits(volatile U32* paddr, U32 value, U32 mask);
+//extern void bcm2835_peri_set_bits(volatile U32* paddr, U32 value, U32 mask);
 /// @} // end of lowlevel
 
 /// \defgroup gpio GPIO register access

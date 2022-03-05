@@ -1,0 +1,3847 @@
+
+../../cmake-build-bcm2835/top/bcm2835/test_timer:     file format elf32-littlearm
+
+
+Disassembly of section .init:
+
+00008000 <_start>:
+;;
+_start:
+    ;@ All the following instruction should be read as:
+    ;@ Load the address at symbol into the program counter.
+
+    ldr    pc,reset_handler        ;@     Processor Reset handler         -- we will have to force this on the raspi!
+    8000:	e59ff018 	ldr	pc, [pc, #24]	; 8020 <reset_handler>
+    ;@ Because this is the first instruction executed, of cause it causes an immediate branch into reset!
+
+    ldr pc,undefined_handler    ;@     Undefined instruction handler     -- processors that don't have thumb can emulate thumb!
+    8004:	e59ff018 	ldr	pc, [pc, #24]	; 8024 <undefined_handler>
+    ldr pc,swi_handler            ;@     Software interrupt / TRAP (SVC) -- system SVC handler for switching to kernel mode.
+    8008:	e59ff018 	ldr	pc, [pc, #24]	; 8028 <swi_handler>
+    ldr pc,prefetch_handler        ;@     Prefetch/abort handler.
+    800c:	e59ff018 	ldr	pc, [pc, #24]	; 802c <prefetch_handler>
+    ldr pc,data_handler            ;@     Data abort handler/
+    8010:	e59ff018 	ldr	pc, [pc, #24]	; 8030 <data_handler>
+    ldr pc,unused_handler        ;@     -- Historical from 26-bit addressing ARMs -- was invalid address handler.
+    8014:	e59ff018 	ldr	pc, [pc, #24]	; 8034 <unused_handler>
+    ldr pc,irq_handler            ;@     IRQ handler
+    8018:	e59ff018 	ldr	pc, [pc, #24]	; 8038 <irq_handler>
+    ldr pc,fiq_handler            ;@     Fast interrupt handler.
+    801c:	e59ff018 	ldr	pc, [pc, #24]	; 803c <fiq_handler>
+
+00008020 <reset_handler>:
+    8020:	00008040 	.word	0x00008040
+
+00008024 <undefined_handler>:
+    8024:	00010090 	.word	0x00010090
+
+00008028 <swi_handler>:
+    8028:	000101a4 	.word	0x000101a4
+
+0000802c <prefetch_handler>:
+    802c:	00010094 	.word	0x00010094
+
+00008030 <data_handler>:
+    8030:	00010098 	.word	0x00010098
+
+00008034 <unused_handler>:
+    8034:	0001009c 	.word	0x0001009c
+
+00008038 <irq_handler>:
+    8038:	000100a8 	.word	0x000100a8
+
+0000803c <fiq_handler>:
+    803c:	000101a8 	.word	0x000101a8
+
+00008040 <reset>:
+    .ltorg
+
+reset:
+    ;@    In the reset handler, we need to copy our interrupt vector table to 0x0000, its currently at 0x8000
+
+    mov r0,#0x8000                                ;@ Store the source pointer
+    8040:	e3a00902 	mov	r0, #32768	; 0x8000
+    mov r1,#0x0000                                ;@ Store the destination pointer.
+    8044:	e3a01000 	mov	r1, #0
+
+    ;@    Here we copy the branching instructions
+    ldmia r0!,{r2,r3,r4,r5,r6,r7,r8,r9}            ;@ Load multiple values from indexed address.         ; Auto-increment R0
+    8048:	e8b003fc 	ldm	r0!, {r2, r3, r4, r5, r6, r7, r8, r9}
+    stmia r1!,{r2,r3,r4,r5,r6,r7,r8,r9}            ;@ Store multiple values from the indexed address.    ; Auto-increment R1
+    804c:	e8a103fc 	stmia	r1!, {r2, r3, r4, r5, r6, r7, r8, r9}
+
+    ;@    So the branches get the correct address we also need to copy our vector table!
+    ldmia r0!,{r2,r3,r4,r5,r6,r7,r8,r9}            ;@ Load from 4*n of regs (8) as R0 is now incremented.
+    8050:	e8b003fc 	ldm	r0!, {r2, r3, r4, r5, r6, r7, r8, r9}
+    stmia r1!,{r2,r3,r4,r5,r6,r7,r8,r9}            ;@ Store this extra set of data.
+    8054:	e8a103fc 	stmia	r1!, {r2, r3, r4, r5, r6, r7, r8, r9}
+
+
+    ;@    Set up the various STACK pointers for different CPU modes
+    ;@ (PSR_IRQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+    mov r0,#0xD2
+    8058:	e3a000d2 	mov	r0, #210	; 0xd2
+    msr cpsr_c,r0
+    805c:	e121f000 	msr	CPSR_c, r0
+    mov sp,#0x8000
+    8060:	e3a0d902 	mov	sp, #32768	; 0x8000
+
+    ;@ (PSR_FIQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+    mov r0,#0xD1
+    8064:	e3a000d1 	mov	r0, #209	; 0xd1
+    msr cpsr_c,r0
+    8068:	e121f000 	msr	CPSR_c, r0
+    mov sp,#0x4000
+    806c:	e3a0d901 	mov	sp, #16384	; 0x4000
+
+    ;@ (PSR_SVC_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+    mov r0,#0xD3
+    8070:	e3a000d3 	mov	r0, #211	; 0xd3
+    msr cpsr_c,r0
+    8074:	e121f000 	msr	CPSR_c, r0
+    mov sp,#0x8000000
+    8078:	e3a0d302 	mov	sp, #134217728	; 0x8000000
+
+    ldr r0, =__bss_start
+    807c:	e59f001c 	ldr	r0, [pc, #28]	; 80a0 <zero_loop+0x18>
+    ldr r1, =__bss_end
+    8080:	e59f101c 	ldr	r1, [pc, #28]	; 80a4 <zero_loop+0x1c>
+
+    mov r2, #0
+    8084:	e3a02000 	mov	r2, #0
+
+00008088 <zero_loop>:
+
+zero_loop:
+    cmp     r0,r1
+    8088:	e1500001 	cmp	r0, r1
+    it        lt
+    strlt    r2,[r0], #4
+    808c:	b4802004 	strlt	r2, [r0], #4
+    blt        zero_loop
+    8090:	bafffffc 	blt	8088 <zero_loop>
+
+    ;@ Disable interrupts
+    cpsid i
+    8094:	f10c0080 	cpsid	i
+
+
+    ;@     mov    sp,#0x1000000
+    bl main                                    ;@ We're ready?? Lets start main execution!
+    8098:	eb0027d6 	bl	11ff8 <main>
+    b hang
+    809c:	ea001fff 	b	100a0 <hang>
+    ldr r0, =__bss_start
+    80a0:	00012158 	.word	0x00012158
+    ldr r1, =__bss_end
+    80a4:	00012288 	.word	0x00012288
+
+Disassembly of section .text:
+
+00010000 <nop_handler>:
+#include <stdarg.h>
+#include <fw.h>
+
+I32 nop_handler(const char* fmt, ...)
+{
+   10000:	e92d000f 	push	{r0, r1, r2, r3}
+    (void) nop_handler;
+    (void) fmt;
+    return 0;
+}
+   10004:	e3a00000 	mov	r0, #0
+   10008:	e28dd010 	add	sp, sp, #16
+   1000c:	e12fff1e 	bx	lr
+
+00010010 <fw_assertion_failure>:
+#endif
+
+void fw_assertion_failure(const char* file, U32 line,
+                          const char* expr_str,
+                          U32 nargs, ...)
+{
+   10010:	e52d3004 	push	{r3}		; (str r3, [sp, #-4]!)
+   10014:	e92d4080 	push	{r7, lr}
+   10018:	e24dd00c 	sub	sp, sp, #12
+   1001c:	e1a0c000 	mov	ip, r0
+   10020:	e1a03002 	mov	r3, r2
+   10024:	e59d6014 	ldr	r6, [sp, #20]
+    // Mask all interrupts
+    // Assertion reached, nothing else should run
+    DISABLE_INTERRUPTS();
+   10028:	f10c00c0 	cpsid	if
+
+    uprintf("Assertion failed %s:%u : (%s)",
+   1002c:	e59f0050 	ldr	r0, [pc, #80]	; 10084 <fw_assertion_failure+0x74>
+   10030:	e1a02001 	mov	r2, r1
+   10034:	e1a0100c 	mov	r1, ip
+   10038:	ebfffff0 	bl	10000 <nop_handler>
+            file, line, expr_str);
+
+    va_list args;
+    va_start(args, nargs);
+   1003c:	e28d4018 	add	r4, sp, #24
+    for (U32 i = 0; i < nargs; i++)
+   10040:	e3560000 	cmp	r6, #0
+   10044:	13a05000 	movne	r5, #0
+    {
+        uprintf(", %d", va_arg(args, int));
+   10048:	159f7038 	ldrne	r7, [pc, #56]	; 10088 <fw_assertion_failure+0x78>
+    va_start(args, nargs);
+   1004c:	e58d4004 	str	r4, [sp, #4]
+    for (U32 i = 0; i < nargs; i++)
+   10050:	0a000007 	beq	10074 <fw_assertion_failure+0x64>
+        uprintf(", %d", va_arg(args, int));
+   10054:	e2844004 	add	r4, r4, #4
+   10058:	e1a00007 	mov	r0, r7
+    for (U32 i = 0; i < nargs; i++)
+   1005c:	e2855001 	add	r5, r5, #1
+        uprintf(", %d", va_arg(args, int));
+   10060:	e5141004 	ldr	r1, [r4, #-4]
+   10064:	e58d4004 	str	r4, [sp, #4]
+   10068:	ebffffe4 	bl	10000 <nop_handler>
+    for (U32 i = 0; i < nargs; i++)
+   1006c:	e1560005 	cmp	r6, r5
+   10070:	1afffff7 	bne	10054 <fw_assertion_failure+0x44>
+    }
+    va_end(args);
+    uprintf("\r\n");
+   10074:	e59f0010 	ldr	r0, [pc, #16]	; 1008c <fw_assertion_failure+0x7c>
+   10078:	ebffffe0 	bl	10000 <nop_handler>
+
+    // Hang Mr. CPU please
+//    BREAKPOINT(); // break point if we are in a debugger
+    while (1)
+    {
+        WAIT_FOR_INTERRUPT();
+   1007c:	e320f003 	wfi
+    while (1)
+   10080:	eafffffd 	b	1007c <fw_assertion_failure+0x6c>
+   10084:	00012018 	.word	0x00012018
+   10088:	0001203c 	.word	0x0001203c
+   1008c:	00012038 	.word	0x00012038
+
+00010090 <undefined_instruction>:
+
+    .section .text
+
+undefined_instruction:
+    b undefined_instruction
+   10090:	eafffffe 	b	10090 <undefined_instruction>
+
+00010094 <prefetch_abort>:
+
+prefetch_abort:
+    b prefetch_abort
+   10094:	eafffffe 	b	10094 <prefetch_abort>
+
+00010098 <data_abort>:
+
+data_abort:
+    b data_abort
+   10098:	eafffffe 	b	10098 <data_abort>
+
+0001009c <unused>:
+
+unused:
+    b unused
+   1009c:	eafffffe 	b	1009c <unused>
+
+000100a0 <hang>:
+
+hang:
+    wfi
+   100a0:	e320f003 	wfi
+    b hang
+   100a4:	eafffffd 	b	100a0 <hang>
+
+000100a8 <Interrupt_IRQHandler>:
+    }
+}
+
+void __attribute__((interrupt("IRQ")))
+Interrupt_IRQHandler(void)
+{
+   100a8:	e24ee004 	sub	lr, lr, #4
+   100ac:	e92d53ff 	push	{r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, ip, lr}
+    register U32 ul_masked_status = INTCREGS->IRQ_Basic;
+   100b0:	e59f30e4 	ldr	r3, [pc, #228]	; 1019c <Interrupt_IRQHandler+0xf4>
+   100b4:	e5935000 	ldr	r5, [r3]
+
+    // Bit 8 in IRQBasic indicates interrupts in Pending1 (interrupts 31-0):
+    if (ul_masked_status & (1UL << 8))
+   100b8:	e3150c01 	tst	r5, #256	; 0x100
+   100bc:	0a00000f 	beq	10100 <Interrupt_IRQHandler+0x58>
+    {
+        irq_handler_range(INTCREGS->Pending1 & enabled_interrupts[0], 0);
+   100c0:	e59f60d8 	ldr	r6, [pc, #216]	; 101a0 <Interrupt_IRQHandler+0xf8>
+   100c4:	e5937004 	ldr	r7, [r3, #4]
+   100c8:	e5963000 	ldr	r3, [r6]
+    while (pending)
+   100cc:	e0177003 	ands	r7, r7, r3
+   100d0:	0a00000a 	beq	10100 <Interrupt_IRQHandler+0x58>
+        pending &= ~(1UL << bit);
+   100d4:	e3a08001 	mov	r8, #1
+        U32 bit = 31 - __builtin_clz(pending);
+   100d8:	e16f4f17 	clz	r4, r7
+   100dc:	e264401f 	rsb	r4, r4, #31
+        if (vector_table[irq])
+   100e0:	e0863104 	add	r3, r6, r4, lsl #2
+   100e4:	e593300c 	ldr	r3, [r3, #12]
+   100e8:	e3530000 	cmp	r3, #0
+   100ec:	0a000001 	beq	100f8 <Interrupt_IRQHandler+0x50>
+            vector_table[irq](irq);
+   100f0:	e1a00004 	mov	r0, r4
+   100f4:	e12fff33 	blx	r3
+    while (pending)
+   100f8:	e1d77418 	bics	r7, r7, r8, lsl r4
+   100fc:	1afffff5 	bne	100d8 <Interrupt_IRQHandler+0x30>
+    }
+
+    // Bit 9 in IRQBasic indicates interrupts in Pending2 (interrupts 63-32):
+    if (ul_masked_status & (1UL << 9))
+   10100:	e3150c02 	tst	r5, #512	; 0x200
+   10104:	0a000010 	beq	1014c <Interrupt_IRQHandler+0xa4>
+    {
+        irq_handler_range(INTCREGS->Pending2 & enabled_interrupts[1], 32);
+   10108:	e59f308c 	ldr	r3, [pc, #140]	; 1019c <Interrupt_IRQHandler+0xf4>
+   1010c:	e59f608c 	ldr	r6, [pc, #140]	; 101a0 <Interrupt_IRQHandler+0xf8>
+   10110:	e5937008 	ldr	r7, [r3, #8]
+   10114:	e5963004 	ldr	r3, [r6, #4]
+    while (pending)
+   10118:	e0177003 	ands	r7, r7, r3
+   1011c:	0a00000a 	beq	1014c <Interrupt_IRQHandler+0xa4>
+        pending &= ~(1UL << bit);
+   10120:	e3a08001 	mov	r8, #1
+        U32 bit = 31 - __builtin_clz(pending);
+   10124:	e16f4f17 	clz	r4, r7
+        U32 irq = base + bit;
+   10128:	e264003f 	rsb	r0, r4, #63	; 0x3f
+        if (vector_table[irq])
+   1012c:	e0863100 	add	r3, r6, r0, lsl #2
+   10130:	e593300c 	ldr	r3, [r3, #12]
+        U32 bit = 31 - __builtin_clz(pending);
+   10134:	e264401f 	rsb	r4, r4, #31
+        if (vector_table[irq])
+   10138:	e3530000 	cmp	r3, #0
+   1013c:	0a000000 	beq	10144 <Interrupt_IRQHandler+0x9c>
+            vector_table[irq](irq);
+   10140:	e12fff33 	blx	r3
+    while (pending)
+   10144:	e1d77418 	bics	r7, r7, r8, lsl r4
+   10148:	1afffff5 	bne	10124 <Interrupt_IRQHandler+0x7c>
+    }
+
+    // Bits 7 through 0 in IRQBasic represent interrupts 64-71:
+    if (ul_masked_status & 0xFF)
+   1014c:	e6ef3075 	uxtb	r3, r5
+   10150:	e3530000 	cmp	r3, #0
+   10154:	08fd93ff 	ldmeq	sp!, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, ip, pc}^
+    {
+        irq_handler_range(ul_masked_status & 0xFF & enabled_interrupts[2], 64);
+   10158:	e59f6040 	ldr	r6, [pc, #64]	; 101a0 <Interrupt_IRQHandler+0xf8>
+   1015c:	e5963008 	ldr	r3, [r6, #8]
+   10160:	e0055003 	and	r5, r5, r3
+    while (pending)
+   10164:	e21550ff 	ands	r5, r5, #255	; 0xff
+   10168:	08fd93ff 	ldmeq	sp!, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, ip, pc}^
+        pending &= ~(1UL << bit);
+   1016c:	e3a07001 	mov	r7, #1
+        U32 bit = 31 - __builtin_clz(pending);
+   10170:	e16f4f15 	clz	r4, r5
+        U32 irq = base + bit;
+   10174:	e264005f 	rsb	r0, r4, #95	; 0x5f
+        if (vector_table[irq])
+   10178:	e0863100 	add	r3, r6, r0, lsl #2
+   1017c:	e593300c 	ldr	r3, [r3, #12]
+        U32 bit = 31 - __builtin_clz(pending);
+   10180:	e264401f 	rsb	r4, r4, #31
+        if (vector_table[irq])
+   10184:	e3530000 	cmp	r3, #0
+   10188:	0a000000 	beq	10190 <Interrupt_IRQHandler+0xe8>
+            vector_table[irq](irq);
+   1018c:	e12fff33 	blx	r3
+    while (pending)
+   10190:	e1d55417 	bics	r5, r5, r7, lsl r4
+   10194:	1afffff5 	bne	10170 <Interrupt_IRQHandler+0xc8>
+   10198:	e8fd93ff 	ldm	sp!, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, ip, pc}^
+   1019c:	2000b200 	.word	0x2000b200
+   101a0:	00012158 	.word	0x00012158
+
+000101a4 <Yield_IRQHandler>:
+}
+
+void __attribute__((interrupt("SWI")))
+Yield_IRQHandler(void)
+{
+}
+   101a4:	e1b0f00e 	movs	pc, lr
+
+000101a8 <Fast_IRQHandler>:
+
+void __attribute__((interrupt("FIQ")))
+Fast_IRQHandler(void)
+{
+}
+   101a8:	e25ef004 	subs	pc, lr, #4
+
+000101ac <bcm2835_interrupt_register>:
+
+void bcm2835_interrupt_register(bcm2835_Interrupt irq,
+                                bcm2835_InterruptHandler handler)
+{
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   101ac:	e3500047 	cmp	r0, #71	; 0x47
+{
+   101b0:	e1a0c000 	mov	ip, r0
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   101b4:	8a000003 	bhi	101c8 <bcm2835_interrupt_register+0x1c>
+    vector_table[irq] = handler;
+   101b8:	e59f3028 	ldr	r3, [pc, #40]	; 101e8 <bcm2835_interrupt_register+0x3c>
+   101bc:	e0833100 	add	r3, r3, r0, lsl #2
+   101c0:	e583100c 	str	r1, [r3, #12]
+   101c4:	e12fff1e 	bx	lr
+{
+   101c8:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+   101cc:	e24dd00c 	sub	sp, sp, #12
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   101d0:	e3a03001 	mov	r3, #1
+   101d4:	e3a01052 	mov	r1, #82	; 0x52
+   101d8:	e59f200c 	ldr	r2, [pc, #12]	; 101ec <bcm2835_interrupt_register+0x40>
+   101dc:	e59f000c 	ldr	r0, [pc, #12]	; 101f0 <bcm2835_interrupt_register+0x44>
+   101e0:	e58dc000 	str	ip, [sp]
+   101e4:	ebffff89 	bl	10010 <fw_assertion_failure>
+   101e8:	00012158 	.word	0x00012158
+   101ec:	00012044 	.word	0x00012044
+   101f0:	00012064 	.word	0x00012064
+
+000101f4 <bcm2835_interrupt_enable>:
+}
+
+void bcm2835_interrupt_enable(bcm2835_Interrupt irq)
+{
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   101f4:	e3500047 	cmp	r0, #71	; 0x47
+{
+   101f8:	e1a0c000 	mov	ip, r0
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   101fc:	8a000017 	bhi	10260 <bcm2835_interrupt_enable+0x6c>
+    U32 mask = 1UL << (irq % 32);
+   10200:	e3a03001 	mov	r3, #1
+   10204:	e200201f 	and	r2, r0, #31
+
+    if (irq <= 31)
+   10208:	e350001f 	cmp	r0, #31
+    U32 mask = 1UL << (irq % 32);
+   1020c:	e1a03213 	lsl	r3, r3, r2
+    if (irq <= 31)
+   10210:	8a000006 	bhi	10230 <bcm2835_interrupt_enable+0x3c>
+    {
+        INTCREGS->Enable1 = mask;
+   10214:	e59f2064 	ldr	r2, [pc, #100]	; 10280 <bcm2835_interrupt_enable+0x8c>
+        enabled_interrupts[0] |= mask;
+   10218:	e59f1064 	ldr	r1, [pc, #100]	; 10284 <bcm2835_interrupt_enable+0x90>
+        INTCREGS->Enable1 = mask;
+   1021c:	e5823010 	str	r3, [r2, #16]
+        enabled_interrupts[0] |= mask;
+   10220:	e5912000 	ldr	r2, [r1]
+   10224:	e1823003 	orr	r3, r2, r3
+   10228:	e5813000 	str	r3, [r1]
+   1022c:	e12fff1e 	bx	lr
+    }
+    else if (irq <= 63)
+    {
+        INTCREGS->Enable2 = mask;
+        enabled_interrupts[1] |= mask;
+   10230:	e59f104c 	ldr	r1, [pc, #76]	; 10284 <bcm2835_interrupt_enable+0x90>
+    else if (irq <= 63)
+   10234:	e35c003f 	cmp	ip, #63	; 0x3f
+        enabled_interrupts[1] |= mask;
+   10238:	95912004 	ldrls	r2, [r1, #4]
+    }
+    else if (irq < BCM2835_INTC_TOTAL_IRQ)
+    {
+        INTCREGS->EnableBasic = mask;
+        enabled_interrupts[2] |= mask;
+   1023c:	85912008 	ldrhi	r2, [r1, #8]
+        INTCREGS->Enable2 = mask;
+   10240:	e59f0038 	ldr	r0, [pc, #56]	; 10280 <bcm2835_interrupt_enable+0x8c>
+   10244:	95803014 	strls	r3, [r0, #20]
+        INTCREGS->EnableBasic = mask;
+   10248:	85803018 	strhi	r3, [r0, #24]
+        enabled_interrupts[1] |= mask;
+   1024c:	91823003 	orrls	r3, r2, r3
+        enabled_interrupts[2] |= mask;
+   10250:	81823003 	orrhi	r3, r2, r3
+        enabled_interrupts[1] |= mask;
+   10254:	95813004 	strls	r3, [r1, #4]
+        enabled_interrupts[2] |= mask;
+   10258:	85813008 	strhi	r3, [r1, #8]
+   1025c:	e12fff1e 	bx	lr
+{
+   10260:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+   10264:	e24dd00c 	sub	sp, sp, #12
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   10268:	e3a03001 	mov	r3, #1
+   1026c:	e3a01058 	mov	r1, #88	; 0x58
+   10270:	e59f2010 	ldr	r2, [pc, #16]	; 10288 <bcm2835_interrupt_enable+0x94>
+   10274:	e59f0010 	ldr	r0, [pc, #16]	; 1028c <bcm2835_interrupt_enable+0x98>
+   10278:	e58dc000 	str	ip, [sp]
+   1027c:	ebffff63 	bl	10010 <fw_assertion_failure>
+   10280:	2000b200 	.word	0x2000b200
+   10284:	00012158 	.word	0x00012158
+   10288:	00012044 	.word	0x00012044
+   1028c:	00012064 	.word	0x00012064
+
+00010290 <bcm2835_interrupt_disable>:
+    }
+}
+
+void bcm2835_interrupt_disable(bcm2835_Interrupt irq)
+{
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   10290:	e3500047 	cmp	r0, #71	; 0x47
+{
+   10294:	e1a0c000 	mov	ip, r0
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   10298:	8a000018 	bhi	10300 <bcm2835_interrupt_disable+0x70>
+    U32 mask = 1UL << (irq % 32);
+   1029c:	e3a03001 	mov	r3, #1
+   102a0:	e200201f 	and	r2, r0, #31
+   102a4:	e1a03213 	lsl	r3, r3, r2
+
+    if (irq <= 31)
+   102a8:	e350001f 	cmp	r0, #31
+    {
+        INTCREGS->Disable1 = mask;
+        enabled_interrupts[0] &= ~mask;
+   102ac:	e1e02003 	mvn	r2, r3
+    if (irq <= 31)
+   102b0:	8a000006 	bhi	102d0 <bcm2835_interrupt_disable+0x40>
+        INTCREGS->Disable1 = mask;
+   102b4:	e59f0064 	ldr	r0, [pc, #100]	; 10320 <bcm2835_interrupt_disable+0x90>
+        enabled_interrupts[0] &= ~mask;
+   102b8:	e59f1064 	ldr	r1, [pc, #100]	; 10324 <bcm2835_interrupt_disable+0x94>
+        INTCREGS->Disable1 = mask;
+   102bc:	e580301c 	str	r3, [r0, #28]
+        enabled_interrupts[0] &= ~mask;
+   102c0:	e5913000 	ldr	r3, [r1]
+   102c4:	e0033002 	and	r3, r3, r2
+   102c8:	e5813000 	str	r3, [r1]
+   102cc:	e12fff1e 	bx	lr
+    }
+    else if (irq <= 63)
+    {
+        INTCREGS->Disable2 = mask;
+        enabled_interrupts[1] &= ~mask;
+   102d0:	e59f004c 	ldr	r0, [pc, #76]	; 10324 <bcm2835_interrupt_disable+0x94>
+    else if (irq <= 63)
+   102d4:	e35c003f 	cmp	ip, #63	; 0x3f
+        enabled_interrupts[1] &= ~mask;
+   102d8:	95901004 	ldrls	r1, [r0, #4]
+    }
+    else if (irq < BCM2835_INTC_TOTAL_IRQ)
+    {
+        INTCREGS->DisableBasic = mask;
+        enabled_interrupts[2] &= ~mask;
+   102dc:	85901008 	ldrhi	r1, [r0, #8]
+        INTCREGS->Disable2 = mask;
+   102e0:	e59fc038 	ldr	ip, [pc, #56]	; 10320 <bcm2835_interrupt_disable+0x90>
+   102e4:	958c3020 	strls	r3, [ip, #32]
+        INTCREGS->DisableBasic = mask;
+   102e8:	858c3024 	strhi	r3, [ip, #36]	; 0x24
+        enabled_interrupts[1] &= ~mask;
+   102ec:	90013002 	andls	r3, r1, r2
+        enabled_interrupts[2] &= ~mask;
+   102f0:	80013002 	andhi	r3, r1, r2
+        enabled_interrupts[1] &= ~mask;
+   102f4:	95803004 	strls	r3, [r0, #4]
+        enabled_interrupts[2] &= ~mask;
+   102f8:	85803008 	strhi	r3, [r0, #8]
+   102fc:	e12fff1e 	bx	lr
+{
+   10300:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+   10304:	e24dd00c 	sub	sp, sp, #12
+    FW_ASSERT(irq < BCM2835_INTC_TOTAL_IRQ, irq);
+   10308:	e3a03001 	mov	r3, #1
+   1030c:	e3a0106e 	mov	r1, #110	; 0x6e
+   10310:	e59f2010 	ldr	r2, [pc, #16]	; 10328 <bcm2835_interrupt_disable+0x98>
+   10314:	e59f0010 	ldr	r0, [pc, #16]	; 1032c <bcm2835_interrupt_disable+0x9c>
+   10318:	e58dc000 	str	ip, [sp]
+   1031c:	ebffff3b 	bl	10010 <fw_assertion_failure>
+   10320:	2000b200 	.word	0x2000b200
+   10324:	00012158 	.word	0x00012158
+   10328:	00012044 	.word	0x00012044
+   1032c:	00012064 	.word	0x00012064
+
+00010330 <gpio_init>:
+#include <drv/gpio.h>
+#include <drv/bcm2835/bcm2835.h>
+
+void gpio_init(GpioPin pin, gpio_function_t function)
+{
+    switch (function)
+   10330:	e3510007 	cmp	r1, #7
+   10334:	979ff101 	ldrls	pc, [pc, r1, lsl #2]
+   10338:	ea000017 	b	1039c <gpio_init+0x6c>
+   1033c:	00010364 	.word	0x00010364
+   10340:	0001036c 	.word	0x0001036c
+   10344:	00010374 	.word	0x00010374
+   10348:	0001037c 	.word	0x0001037c
+   1034c:	00010384 	.word	0x00010384
+   10350:	0001038c 	.word	0x0001038c
+   10354:	00010394 	.word	0x00010394
+   10358:	0001035c 	.word	0x0001035c
+            break;
+        case GPIO_FUNCTION_ALT4:
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_ALT4);
+            break;
+        case GPIO_FUNCTION_ALT5:
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_ALT5);
+   1035c:	e3a01002 	mov	r1, #2
+   10360:	ea000030 	b	10428 <bcm2835_gpio_fsel>
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_INPT);
+   10364:	e3a01000 	mov	r1, #0
+   10368:	ea00002e 	b	10428 <bcm2835_gpio_fsel>
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_OUTP);
+   1036c:	e3a01001 	mov	r1, #1
+   10370:	ea00002c 	b	10428 <bcm2835_gpio_fsel>
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_ALT0);
+   10374:	e3a01004 	mov	r1, #4
+   10378:	ea00002a 	b	10428 <bcm2835_gpio_fsel>
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_ALT1);
+   1037c:	e3a01005 	mov	r1, #5
+   10380:	ea000028 	b	10428 <bcm2835_gpio_fsel>
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_ALT2);
+   10384:	e3a01006 	mov	r1, #6
+   10388:	ea000026 	b	10428 <bcm2835_gpio_fsel>
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_ALT3);
+   1038c:	e3a01007 	mov	r1, #7
+   10390:	ea000024 	b	10428 <bcm2835_gpio_fsel>
+            bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_ALT4);
+   10394:	e3a01003 	mov	r1, #3
+   10398:	ea000022 	b	10428 <bcm2835_gpio_fsel>
+   1039c:	e1a0c001 	mov	ip, r1
+{
+   103a0:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+   103a4:	e24dd00c 	sub	sp, sp, #12
+            break;
+        default:
+            FW_ASSERT(0 && "Invalid function select", function);
+   103a8:	e3a03001 	mov	r3, #1
+   103ac:	e3a01021 	mov	r1, #33	; 0x21
+   103b0:	e59f2008 	ldr	r2, [pc, #8]	; 103c0 <gpio_init+0x90>
+   103b4:	e59f0008 	ldr	r0, [pc, #8]	; 103c4 <gpio_init+0x94>
+    switch (function)
+   103b8:	e58dc000 	str	ip, [sp]
+            FW_ASSERT(0 && "Invalid function select", function);
+   103bc:	ebffff13 	bl	10010 <fw_assertion_failure>
+   103c0:	000120a0 	.word	0x000120a0
+   103c4:	000120c0 	.word	0x000120c0
+
+000103c8 <gpio_options>:
+    }
+}
+
+void gpio_options(GpioPin pin, gpio_options_t options)
+{
+    switch(options)
+   103c8:	e3510001 	cmp	r1, #1
+   103cc:	0a00000c 	beq	10404 <gpio_options+0x3c>
+   103d0:	e3510002 	cmp	r1, #2
+   103d4:	e1a0c001 	mov	ip, r1
+   103d8:	0a000009 	beq	10404 <gpio_options+0x3c>
+   103dc:	e3510000 	cmp	r1, #0
+   103e0:	0a000007 	beq	10404 <gpio_options+0x3c>
+{
+   103e4:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+   103e8:	e24dd00c 	sub	sp, sp, #12
+            break;
+        case GPIO_OPTIONS_PUD_UP:
+            bcm2835_gpio_set_pud(pin, BCM2835_GPIO_PUD_UP);
+            break;
+        default:
+            FW_ASSERT(0 && "Invalid options select", options);
+   103ec:	e3a03001 	mov	r3, #1
+   103f0:	e3a01033 	mov	r1, #51	; 0x33
+   103f4:	e59f200c 	ldr	r2, [pc, #12]	; 10408 <gpio_options+0x40>
+   103f8:	e59f000c 	ldr	r0, [pc, #12]	; 1040c <gpio_options+0x44>
+    switch(options)
+   103fc:	e58dc000 	str	ip, [sp]
+            FW_ASSERT(0 && "Invalid options select", options);
+   10400:	ebffff02 	bl	10010 <fw_assertion_failure>
+            bcm2835_gpio_set_pud(pin, BCM2835_GPIO_PUD_UP);
+   10404:	ea00013f 	b	10908 <bcm2835_gpio_set_pud>
+   10408:	000120ec 	.word	0x000120ec
+   1040c:	000120c0 	.word	0x000120c0
+
+00010410 <gpio_output>:
+    }
+}
+
+void gpio_output(GpioPin pin, bool_t output)
+{
+    switch(output)
+   10410:	e3510000 	cmp	r1, #0
+   10414:	1a000000 	bne	1041c <gpio_output+0xc>
+    {
+        case FALSE:
+            bcm2835_gpio_clr(pin);
+   10418:	ea00003e 	b	10518 <bcm2835_gpio_clr>
+            break;
+        case TRUE:
+        default:
+            bcm2835_gpio_set(pin);
+   1041c:	ea000024 	b	104b4 <bcm2835_gpio_set>
+
+00010420 <bcm2835_peri_write_nb>:
+}
+
+// write to peripheral without the write barrier
+void bcm2835_peri_write_nb(volatile U32* paddr, U32 value)
+{
+    *paddr = value;
+   10420:	e5801000 	str	r1, [r0]
+}
+   10424:	e12fff1e 	bx	lr
+
+00010428 <bcm2835_gpio_fsel>:
+//
+// So the 3 bits for port X are:
+//      X / 10 + ((X % 10) * 3)
+COMPILE_ASSERT(&BCM2835_GPIO->FSEL[4] == (U32*)0x20200010, fsel_4_location);
+void bcm2835_gpio_fsel(U8 pin, U8 mode)
+{
+   10428:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    FW_ASSERT(pin / 10 < 6, pin);
+   1042c:	e350003b 	cmp	r0, #59	; 0x3b
+{
+   10430:	e1a0c000 	mov	ip, r0
+   10434:	e24dd00c 	sub	sp, sp, #12
+    FW_ASSERT(pin / 10 < 6, pin);
+   10438:	8a000014 	bhi	10490 <bcm2835_gpio_fsel+0x68>
+
+    // Function selects are 10 pins per 32 bit word, 3 bits per pin
+    volatile U32* paddr = &BCM2835_GPIO->FSEL[pin / 10];
+   1043c:	e59f2064 	ldr	r2, [pc, #100]	; 104a8 <bcm2835_gpio_fsel+0x80>
+   10440:	e0823092 	umull	r3, r2, r2, r0
+   10444:	e1a031a2 	lsr	r3, r2, #3
+   10448:	e1a02003 	mov	r2, r3
+
+    U8 shift = (pin % 10) * 3;
+   1044c:	e0822102 	add	r2, r2, r2, lsl #2
+   10450:	e040c082 	sub	ip, r0, r2, lsl #1
+    U32 mask = BCM2835_GPIO_FSEL_MASK << shift;
+   10454:	e3a00007 	mov	r0, #7
+    volatile U32* paddr = &BCM2835_GPIO->FSEL[pin / 10];
+   10458:	e1a03103 	lsl	r3, r3, #2
+   1045c:	e2833202 	add	r3, r3, #536870912	; 0x20000000
+   10460:	e2833602 	add	r3, r3, #2097152	; 0x200000
+    U32 ret = *paddr;
+   10464:	e5932000 	ldr	r2, [r3]
+    U8 shift = (pin % 10) * 3;
+   10468:	e08cc08c 	add	ip, ip, ip, lsl #1
+    U32 mask = BCM2835_GPIO_FSEL_MASK << shift;
+   1046c:	e6efc07c 	uxtb	ip, ip
+    v = (v & ~mask) | (value & mask);
+   10470:	e0221c11 	eor	r1, r2, r1, lsl ip
+    *paddr; // Read without assigning to an unused variable
+   10474:	e593e000 	ldr	lr, [r3]
+    v = (v & ~mask) | (value & mask);
+   10478:	e0011c10 	and	r1, r1, r0, lsl ip
+   1047c:	e0211002 	eor	r1, r1, r2
+    *paddr = value;
+   10480:	e5831000 	str	r1, [r3]
+    *paddr = value;
+   10484:	e5831000 	str	r1, [r3]
+    U32 value = mode << shift;
+    bcm2835_peri_set_bits(paddr, value, mask);
+}
+   10488:	e28dd00c 	add	sp, sp, #12
+   1048c:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+    FW_ASSERT(pin / 10 < 6, pin);
+   10490:	e3a03001 	mov	r3, #1
+   10494:	e3a01061 	mov	r1, #97	; 0x61
+   10498:	e59f200c 	ldr	r2, [pc, #12]	; 104ac <bcm2835_gpio_fsel+0x84>
+   1049c:	e59f000c 	ldr	r0, [pc, #12]	; 104b0 <bcm2835_gpio_fsel+0x88>
+   104a0:	e58dc000 	str	ip, [sp]
+   104a4:	ebfffed9 	bl	10010 <fw_assertion_failure>
+   104a8:	cccccccd 	.word	0xcccccccd
+   104ac:	0001210c 	.word	0x0001210c
+   104b0:	0001211c 	.word	0x0001211c
+
+000104b4 <bcm2835_gpio_set>:
+
+// Set output pin
+COMPILE_ASSERT(&BCM2835_GPIO->SET[1] == (U32*)0x20200020, gpio_set_check);
+void bcm2835_gpio_set(U8 pin)
+{
+   104b4:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    FW_ASSERT(pin < 64, pin);
+   104b8:	e350003f 	cmp	r0, #63	; 0x3f
+{
+   104bc:	e1a0c000 	mov	ip, r0
+   104c0:	e24dd00c 	sub	sp, sp, #12
+    FW_ASSERT(pin < 64, pin);
+   104c4:	8a00000a 	bhi	104f4 <bcm2835_gpio_set+0x40>
+    volatile U32* paddr = &BCM2835_GPIO->SET[pin / 32];
+    U8 shift = pin % 32;
+    U32 value = bcm2835_peri_read(paddr);
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   104c8:	e3a00001 	mov	r0, #1
+    volatile U32* paddr = &BCM2835_GPIO->SET[pin / 32];
+   104cc:	e59f3038 	ldr	r3, [pc, #56]	; 1050c <bcm2835_gpio_set+0x58>
+   104d0:	e1a022ac 	lsr	r2, ip, #5
+    U32 ret = *paddr;
+   104d4:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   104d8:	e20cc01f 	and	ip, ip, #31
+    *paddr; // Read without assigning to an unused variable
+   104dc:	e793e102 	ldr	lr, [r3, r2, lsl #2]
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   104e0:	e1811c10 	orr	r1, r1, r0, lsl ip
+    *paddr = value;
+   104e4:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   104e8:	e7831102 	str	r1, [r3, r2, lsl #2]
+}
+   104ec:	e28dd00c 	add	sp, sp, #12
+   104f0:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+    FW_ASSERT(pin < 64, pin);
+   104f4:	e3a03001 	mov	r3, #1
+   104f8:	e3a01070 	mov	r1, #112	; 0x70
+   104fc:	e59f200c 	ldr	r2, [pc, #12]	; 10510 <bcm2835_gpio_set+0x5c>
+   10500:	e59f000c 	ldr	r0, [pc, #12]	; 10514 <bcm2835_gpio_set+0x60>
+   10504:	e58dc000 	str	ip, [sp]
+   10508:	ebfffec0 	bl	10010 <fw_assertion_failure>
+   1050c:	2020001c 	.word	0x2020001c
+   10510:	0001214c 	.word	0x0001214c
+   10514:	0001211c 	.word	0x0001211c
+
+00010518 <bcm2835_gpio_clr>:
+
+// Clear output pin
+void bcm2835_gpio_clr(U8 pin)
+{
+   10518:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    FW_ASSERT(pin < 64, pin);
+   1051c:	e350003f 	cmp	r0, #63	; 0x3f
+{
+   10520:	e1a0c000 	mov	ip, r0
+   10524:	e24dd00c 	sub	sp, sp, #12
+    FW_ASSERT(pin < 64, pin);
+   10528:	8a00000a 	bhi	10558 <bcm2835_gpio_clr+0x40>
+    volatile U32* paddr = &BCM2835_GPIO->CLR[pin / 32];
+    U8 shift = pin % 32;
+    U32 value = bcm2835_peri_read(paddr);
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   1052c:	e3a00001 	mov	r0, #1
+    volatile U32* paddr = &BCM2835_GPIO->CLR[pin / 32];
+   10530:	e59f3038 	ldr	r3, [pc, #56]	; 10570 <bcm2835_gpio_clr+0x58>
+   10534:	e1a022ac 	lsr	r2, ip, #5
+    U32 ret = *paddr;
+   10538:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   1053c:	e20cc01f 	and	ip, ip, #31
+    *paddr; // Read without assigning to an unused variable
+   10540:	e793e102 	ldr	lr, [r3, r2, lsl #2]
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   10544:	e1811c10 	orr	r1, r1, r0, lsl ip
+    *paddr = value;
+   10548:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   1054c:	e7831102 	str	r1, [r3, r2, lsl #2]
+}
+   10550:	e28dd00c 	add	sp, sp, #12
+   10554:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+    FW_ASSERT(pin < 64, pin);
+   10558:	e3a03001 	mov	r3, #1
+   1055c:	e3a0107a 	mov	r1, #122	; 0x7a
+   10560:	e59f200c 	ldr	r2, [pc, #12]	; 10574 <bcm2835_gpio_clr+0x5c>
+   10564:	e59f000c 	ldr	r0, [pc, #12]	; 10578 <bcm2835_gpio_clr+0x60>
+   10568:	e58dc000 	str	ip, [sp]
+   1056c:	ebfffea7 	bl	10010 <fw_assertion_failure>
+   10570:	20200028 	.word	0x20200028
+   10574:	0001214c 	.word	0x0001214c
+   10578:	0001211c 	.word	0x0001211c
+
+0001057c <bcm2835_gpio_lev>:
+U8 bcm2835_gpio_lev(U8 pin)
+{
+    volatile U32* paddr = &BCM2835_GPIO->LEV[pin / 32];
+    U8 shift = pin % 32;
+    U32 value = bcm2835_peri_read(paddr);
+    return (value & (1 << shift)) ? HIGH : LOW;
+   1057c:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = &BCM2835_GPIO->LEV[pin / 32];
+   10580:	e59f301c 	ldr	r3, [pc, #28]	; 105a4 <bcm2835_gpio_lev+0x28>
+   10584:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   10588:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    return (value & (1 << shift)) ? HIGH : LOW;
+   1058c:	e200001f 	and	r0, r0, #31
+   10590:	e011101c 	ands	r1, r1, ip, lsl r0
+}
+   10594:	11a0000c 	movne	r0, ip
+   10598:	03a00000 	moveq	r0, #0
+    *paddr; // Read without assigning to an unused variable
+   1059c:	e7933102 	ldr	r3, [r3, r2, lsl #2]
+}
+   105a0:	e12fff1e 	bx	lr
+   105a4:	20200034 	.word	0x20200034
+
+000105a8 <bcm2835_gpio_eds>:
+U8 bcm2835_gpio_eds(U8 pin)
+{
+    volatile U32* paddr = &BCM2835_GPIO->EDS[pin / 32];
+    U8 shift = pin % 32;
+    U32 value = bcm2835_peri_read(paddr);
+    return (value & (1 << shift)) ? HIGH : LOW;
+   105a8:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = &BCM2835_GPIO->EDS[pin / 32];
+   105ac:	e59f301c 	ldr	r3, [pc, #28]	; 105d0 <bcm2835_gpio_eds+0x28>
+   105b0:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   105b4:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    return (value & (1 << shift)) ? HIGH : LOW;
+   105b8:	e200001f 	and	r0, r0, #31
+   105bc:	e011101c 	ands	r1, r1, ip, lsl r0
+}
+   105c0:	11a0000c 	movne	r0, ip
+   105c4:	03a00000 	moveq	r0, #0
+    *paddr; // Read without assigning to an unused variable
+   105c8:	e7933102 	ldr	r3, [r3, r2, lsl #2]
+}
+   105cc:	e12fff1e 	bx	lr
+   105d0:	20200040 	.word	0x20200040
+
+000105d4 <bcm2835_gpio_set_eds>:
+// Write a 1 to clear the bit in EDS
+void bcm2835_gpio_set_eds(U8 pin)
+{
+    volatile U32* paddr = &BCM2835_GPIO->EDS[pin / 32];
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   105d4:	e3a03001 	mov	r3, #1
+    volatile U32* paddr = &BCM2835_GPIO->EDS[pin / 32];
+   105d8:	e59f2014 	ldr	r2, [pc, #20]	; 105f4 <bcm2835_gpio_set_eds+0x20>
+    U32 value = 1 << shift;
+   105dc:	e200101f 	and	r1, r0, #31
+   105e0:	e1a03113 	lsl	r3, r3, r1
+    volatile U32* paddr = &BCM2835_GPIO->EDS[pin / 32];
+   105e4:	e1a002a0 	lsr	r0, r0, #5
+    *paddr = value;
+   105e8:	e7823100 	str	r3, [r2, r0, lsl #2]
+    *paddr = value;
+   105ec:	e7823100 	str	r3, [r2, r0, lsl #2]
+    bcm2835_peri_write(paddr, value);
+}
+   105f0:	e12fff1e 	bx	lr
+   105f4:	20200040 	.word	0x20200040
+
+000105f8 <bcm2835_gpio_ren>:
+// Rising edge detect enable
+void bcm2835_gpio_ren(U8 pin)
+{
+    volatile U32* paddr = &BCM2835_GPIO->REN[pin / 32];
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   105f8:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = &BCM2835_GPIO->REN[pin / 32];
+   105fc:	e59f301c 	ldr	r3, [pc, #28]	; 10620 <bcm2835_gpio_ren+0x28>
+   10600:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   10604:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   10608:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   1060c:	e181101c 	orr	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   10610:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   10614:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   10618:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, value, value);
+}
+   1061c:	e12fff1e 	bx	lr
+   10620:	2020004c 	.word	0x2020004c
+
+00010624 <bcm2835_gpio_clr_ren>:
+
+void bcm2835_gpio_clr_ren(U8 pin)
+{
+    volatile U32* paddr = &BCM2835_GPIO->REN[pin / 32];
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   10624:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = &BCM2835_GPIO->REN[pin / 32];
+   10628:	e59f301c 	ldr	r3, [pc, #28]	; 1064c <bcm2835_gpio_clr_ren+0x28>
+   1062c:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   10630:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   10634:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   10638:	e1c1101c 	bic	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   1063c:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   10640:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   10644:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, 0, value);
+}
+   10648:	e12fff1e 	bx	lr
+   1064c:	2020004c 	.word	0x2020004c
+
+00010650 <bcm2835_gpio_fen>:
+// Falling edge detect enable
+void bcm2835_gpio_fen(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPFEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   10650:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPFEN0 / 4 + pin / 32;
+   10654:	e59f301c 	ldr	r3, [pc, #28]	; 10678 <bcm2835_gpio_fen+0x28>
+   10658:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   1065c:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   10660:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   10664:	e181101c 	orr	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   10668:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   1066c:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   10670:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, value, value);
+}
+   10674:	e12fff1e 	bx	lr
+   10678:	20200058 	.word	0x20200058
+
+0001067c <bcm2835_gpio_clr_fen>:
+
+void bcm2835_gpio_clr_fen(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPFEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   1067c:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPFEN0 / 4 + pin / 32;
+   10680:	e59f301c 	ldr	r3, [pc, #28]	; 106a4 <bcm2835_gpio_clr_fen+0x28>
+   10684:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   10688:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   1068c:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   10690:	e1c1101c 	bic	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   10694:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   10698:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   1069c:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, 0, value);
+}
+   106a0:	e12fff1e 	bx	lr
+   106a4:	20200058 	.word	0x20200058
+
+000106a8 <bcm2835_gpio_hen>:
+// High detect enable
+void bcm2835_gpio_hen(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPHEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   106a8:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPHEN0 / 4 + pin / 32;
+   106ac:	e59f301c 	ldr	r3, [pc, #28]	; 106d0 <bcm2835_gpio_hen+0x28>
+   106b0:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   106b4:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   106b8:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   106bc:	e181101c 	orr	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   106c0:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   106c4:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   106c8:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, value, value);
+}
+   106cc:	e12fff1e 	bx	lr
+   106d0:	20200064 	.word	0x20200064
+
+000106d4 <bcm2835_gpio_clr_hen>:
+
+void bcm2835_gpio_clr_hen(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPHEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   106d4:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPHEN0 / 4 + pin / 32;
+   106d8:	e59f301c 	ldr	r3, [pc, #28]	; 106fc <bcm2835_gpio_clr_hen+0x28>
+   106dc:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   106e0:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   106e4:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   106e8:	e1c1101c 	bic	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   106ec:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   106f0:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   106f4:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, 0, value);
+}
+   106f8:	e12fff1e 	bx	lr
+   106fc:	20200064 	.word	0x20200064
+
+00010700 <bcm2835_gpio_len>:
+// Low detect enable
+void bcm2835_gpio_len(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPLEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   10700:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPLEN0 / 4 + pin / 32;
+   10704:	e59f301c 	ldr	r3, [pc, #28]	; 10728 <bcm2835_gpio_len+0x28>
+   10708:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   1070c:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   10710:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   10714:	e181101c 	orr	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   10718:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   1071c:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   10720:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, value, value);
+}
+   10724:	e12fff1e 	bx	lr
+   10728:	20200070 	.word	0x20200070
+
+0001072c <bcm2835_gpio_clr_len>:
+
+void bcm2835_gpio_clr_len(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPLEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   1072c:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPLEN0 / 4 + pin / 32;
+   10730:	e59f301c 	ldr	r3, [pc, #28]	; 10754 <bcm2835_gpio_clr_len+0x28>
+   10734:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   10738:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   1073c:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   10740:	e1c1101c 	bic	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   10744:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   10748:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   1074c:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, 0, value);
+}
+   10750:	e12fff1e 	bx	lr
+   10754:	20200070 	.word	0x20200070
+
+00010758 <bcm2835_gpio_aren>:
+// Async rising edge detect enable
+void bcm2835_gpio_aren(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAREN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   10758:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAREN0 / 4 + pin / 32;
+   1075c:	e59f301c 	ldr	r3, [pc, #28]	; 10780 <bcm2835_gpio_aren+0x28>
+   10760:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   10764:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   10768:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   1076c:	e181101c 	orr	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   10770:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   10774:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   10778:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, value, value);
+}
+   1077c:	e12fff1e 	bx	lr
+   10780:	2020007c 	.word	0x2020007c
+
+00010784 <bcm2835_gpio_clr_aren>:
+
+void bcm2835_gpio_clr_aren(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAREN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   10784:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAREN0 / 4 + pin / 32;
+   10788:	e59f301c 	ldr	r3, [pc, #28]	; 107ac <bcm2835_gpio_clr_aren+0x28>
+   1078c:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   10790:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   10794:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   10798:	e1c1101c 	bic	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   1079c:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   107a0:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   107a4:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, 0, value);
+}
+   107a8:	e12fff1e 	bx	lr
+   107ac:	2020007c 	.word	0x2020007c
+
+000107b0 <bcm2835_gpio_afen>:
+// Async falling edge detect enable
+void bcm2835_gpio_afen(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAFEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   107b0:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAFEN0 / 4 + pin / 32;
+   107b4:	e59f301c 	ldr	r3, [pc, #28]	; 107d8 <bcm2835_gpio_afen+0x28>
+   107b8:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   107bc:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   107c0:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   107c4:	e181101c 	orr	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   107c8:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   107cc:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   107d0:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, value, value);
+}
+   107d4:	e12fff1e 	bx	lr
+   107d8:	20200088 	.word	0x20200088
+
+000107dc <bcm2835_gpio_clr_afen>:
+
+void bcm2835_gpio_clr_afen(U8 pin)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAFEN0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    U32 value = 1 << shift;
+   107dc:	e3a0c001 	mov	ip, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPAFEN0 / 4 + pin / 32;
+   107e0:	e59f301c 	ldr	r3, [pc, #28]	; 10804 <bcm2835_gpio_clr_afen+0x28>
+   107e4:	e1a022a0 	lsr	r2, r0, #5
+    U32 ret = *paddr;
+   107e8:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    U32 value = 1 << shift;
+   107ec:	e200001f 	and	r0, r0, #31
+    v = (v & ~mask) | (value & mask);
+   107f0:	e1c1101c 	bic	r1, r1, ip, lsl r0
+    *paddr; // Read without assigning to an unused variable
+   107f4:	e7930102 	ldr	r0, [r3, r2, lsl #2]
+    *paddr = value;
+   107f8:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   107fc:	e7831102 	str	r1, [r3, r2, lsl #2]
+    bcm2835_peri_set_bits(paddr, 0, value);
+}
+   10800:	e12fff1e 	bx	lr
+   10804:	20200088 	.word	0x20200088
+
+00010808 <bcm2835_gpio_pud>:
+    *paddr = value;
+   10808:	e59f3008 	ldr	r3, [pc, #8]	; 10818 <bcm2835_gpio_pud+0x10>
+   1080c:	e5830094 	str	r0, [r3, #148]	; 0x94
+    *paddr = value;
+   10810:	e5830094 	str	r0, [r3, #148]	; 0x94
+// Set pullup/down
+void bcm2835_gpio_pud(U8 pud)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPPUD / 4;
+    bcm2835_peri_write(paddr, pud);
+}
+   10814:	e12fff1e 	bx	lr
+   10818:	20200000 	.word	0x20200000
+
+0001081c <bcm2835_gpio_pudclk>:
+// Clocks the value of pud into the GPIO pin
+void bcm2835_gpio_pudclk(U8 pin, U8 on)
+{
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPPUDCLK0 / 4 + pin / 32;
+    U8 shift = pin % 32;
+    bcm2835_peri_write(paddr, (on ? 1 : 0) << shift);
+   1081c:	e2511000 	subs	r1, r1, #0
+   10820:	13a01001 	movne	r1, #1
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPPUDCLK0 / 4 + pin / 32;
+   10824:	e59f3014 	ldr	r3, [pc, #20]	; 10840 <bcm2835_gpio_pudclk+0x24>
+    bcm2835_peri_write(paddr, (on ? 1 : 0) << shift);
+   10828:	e200201f 	and	r2, r0, #31
+   1082c:	e1a01211 	lsl	r1, r1, r2
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPPUDCLK0 / 4 + pin / 32;
+   10830:	e1a002a0 	lsr	r0, r0, #5
+    *paddr = value;
+   10834:	e7831100 	str	r1, [r3, r0, lsl #2]
+    *paddr = value;
+   10838:	e7831100 	str	r1, [r3, r0, lsl #2]
+}
+   1083c:	e12fff1e 	bx	lr
+   10840:	20200098 	.word	0x20200098
+
+00010844 <bcm2835_gpio_pad>:
+
+// Read GPIO pad behaviour for groups of GPIOs
+U32 bcm2835_gpio_pad(U8 group)
+{
+    volatile U32* paddr = ((U32*)BCM2835_GPIO_PADS) + BCM2835_PADS_GPIO_0_27 / 4 + group * 2;
+   10844:	e1a03000 	mov	r3, r0
+   10848:	e59f2008 	ldr	r2, [pc, #8]	; 10858 <bcm2835_gpio_pad+0x14>
+    U32 ret = *paddr;
+   1084c:	e7920180 	ldr	r0, [r2, r0, lsl #3]
+    *paddr; // Read without assigning to an unused variable
+   10850:	e7923183 	ldr	r3, [r2, r3, lsl #3]
+    return bcm2835_peri_read(paddr);
+}
+   10854:	e12fff1e 	bx	lr
+   10858:	2010002c 	.word	0x2010002c
+
+0001085c <bcm2835_gpio_set_pad>:
+// Set GPIO pad behaviour for groups of GPIOs
+// powerup value for al pads is
+// BCM2835_PAD_SLEW_RATE_UNLIMITED | BCM2835_PAD_HYSTERESIS_ENABLED | BCM2835_PAD_DRIVE_8mA
+void bcm2835_gpio_set_pad(U8 group, U32 control)
+{
+    volatile U32* paddr = ((U32*)BCM2835_GPIO_PADS) + BCM2835_PADS_GPIO_0_27 / 4 + group * 2;
+   1085c:	e59f300c 	ldr	r3, [pc, #12]	; 10870 <bcm2835_gpio_set_pad+0x14>
+    bcm2835_peri_write(paddr, control | BCM2835_PAD_PASSWRD);
+   10860:	e381145a 	orr	r1, r1, #1509949440	; 0x5a000000
+    *paddr = value;
+   10864:	e7831180 	str	r1, [r3, r0, lsl #3]
+    *paddr = value;
+   10868:	e7831180 	str	r1, [r3, r0, lsl #3]
+}
+   1086c:	e12fff1e 	bx	lr
+   10870:	2010002c 	.word	0x2010002c
+
+00010874 <bcm2835_gpio_write>:
+// Higher level convenience functions
+//
+
+// Set the state of an output
+void bcm2835_gpio_write(U8 pin, U8 on)
+{
+   10874:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    if (on)
+   10878:	e3510000 	cmp	r1, #0
+{
+   1087c:	e1a0c000 	mov	ip, r0
+   10880:	e24dd00c 	sub	sp, sp, #12
+    if (on)
+   10884:	0a00000c 	beq	108bc <bcm2835_gpio_write+0x48>
+    FW_ASSERT(pin < 64, pin);
+   10888:	e350003f 	cmp	r0, #63	; 0x3f
+    volatile U32* paddr = &BCM2835_GPIO->SET[pin / 32];
+   1088c:	959f3064 	ldrls	r3, [pc, #100]	; 108f8 <bcm2835_gpio_write+0x84>
+    FW_ASSERT(pin < 64, pin);
+   10890:	8a000012 	bhi	108e0 <bcm2835_gpio_write+0x6c>
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   10894:	e3a00001 	mov	r0, #1
+    volatile U32* paddr = &BCM2835_GPIO->CLR[pin / 32];
+   10898:	e1a022ac 	lsr	r2, ip, #5
+    U32 ret = *paddr;
+   1089c:	e7931102 	ldr	r1, [r3, r2, lsl #2]
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   108a0:	e20cc01f 	and	ip, ip, #31
+    *paddr; // Read without assigning to an unused variable
+   108a4:	e793e102 	ldr	lr, [r3, r2, lsl #2]
+    bcm2835_peri_write(paddr, value | (1 << shift));
+   108a8:	e1811c10 	orr	r1, r1, r0, lsl ip
+    *paddr = value;
+   108ac:	e7831102 	str	r1, [r3, r2, lsl #2]
+    *paddr = value;
+   108b0:	e7831102 	str	r1, [r3, r2, lsl #2]
+        bcm2835_gpio_set(pin);
+    else
+        bcm2835_gpio_clr(pin);
+}
+   108b4:	e28dd00c 	add	sp, sp, #12
+   108b8:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+    FW_ASSERT(pin < 64, pin);
+   108bc:	e350003f 	cmp	r0, #63	; 0x3f
+    volatile U32* paddr = &BCM2835_GPIO->CLR[pin / 32];
+   108c0:	959f3034 	ldrls	r3, [pc, #52]	; 108fc <bcm2835_gpio_write+0x88>
+    FW_ASSERT(pin < 64, pin);
+   108c4:	9afffff2 	bls	10894 <bcm2835_gpio_write+0x20>
+   108c8:	e3a03001 	mov	r3, #1
+   108cc:	e3a0107a 	mov	r1, #122	; 0x7a
+   108d0:	e59f2028 	ldr	r2, [pc, #40]	; 10900 <bcm2835_gpio_write+0x8c>
+   108d4:	e59f0028 	ldr	r0, [pc, #40]	; 10904 <bcm2835_gpio_write+0x90>
+   108d8:	e58dc000 	str	ip, [sp]
+   108dc:	ebfffdcb 	bl	10010 <fw_assertion_failure>
+    FW_ASSERT(pin < 64, pin);
+   108e0:	e3a03001 	mov	r3, #1
+   108e4:	e3a01070 	mov	r1, #112	; 0x70
+   108e8:	e59f2010 	ldr	r2, [pc, #16]	; 10900 <bcm2835_gpio_write+0x8c>
+   108ec:	e59f0010 	ldr	r0, [pc, #16]	; 10904 <bcm2835_gpio_write+0x90>
+   108f0:	e58dc000 	str	ip, [sp]
+   108f4:	ebfffdc5 	bl	10010 <fw_assertion_failure>
+   108f8:	2020001c 	.word	0x2020001c
+   108fc:	20200028 	.word	0x20200028
+   10900:	0001214c 	.word	0x0001214c
+   10904:	0001211c 	.word	0x0001211c
+
+00010908 <bcm2835_gpio_set_pud>:
+//
+// RPi has P1-03 and P1-05 with 1k8 pullup resistor
+void bcm2835_gpio_set_pud(U8 pin, U8 pud)
+{
+    bcm2835_gpio_pud(pud);
+    for (volatile U32 i = -1; i > 0; i--); // delay
+   10908:	e3e02000 	mvn	r2, #0
+    *paddr = value;
+   1090c:	e59f3098 	ldr	r3, [pc, #152]	; 109ac <bcm2835_gpio_set_pud+0xa4>
+{
+   10910:	e24dd008 	sub	sp, sp, #8
+    *paddr = value;
+   10914:	e5831094 	str	r1, [r3, #148]	; 0x94
+    *paddr = value;
+   10918:	e5831094 	str	r1, [r3, #148]	; 0x94
+    for (volatile U32 i = -1; i > 0; i--); // delay
+   1091c:	e58d2000 	str	r2, [sp]
+   10920:	e59d3000 	ldr	r3, [sp]
+   10924:	e3530000 	cmp	r3, #0
+   10928:	0a000005 	beq	10944 <bcm2835_gpio_set_pud+0x3c>
+   1092c:	e59d3000 	ldr	r3, [sp]
+   10930:	e2433001 	sub	r3, r3, #1
+   10934:	e58d3000 	str	r3, [sp]
+   10938:	e59d3000 	ldr	r3, [sp]
+   1093c:	e3530000 	cmp	r3, #0
+   10940:	1afffff9 	bne	1092c <bcm2835_gpio_set_pud+0x24>
+    bcm2835_peri_write(paddr, (on ? 1 : 0) << shift);
+   10944:	e3a03001 	mov	r3, #1
+    bcm2835_gpio_pudclk(pin, 1);
+    for (volatile U32 i = -1; i > 0; i--); // delay
+   10948:	e3e01000 	mvn	r1, #0
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPPUDCLK0 / 4 + pin / 32;
+   1094c:	e59f205c 	ldr	r2, [pc, #92]	; 109b0 <bcm2835_gpio_set_pud+0xa8>
+    bcm2835_peri_write(paddr, (on ? 1 : 0) << shift);
+   10950:	e200c01f 	and	ip, r0, #31
+   10954:	e1a03c13 	lsl	r3, r3, ip
+    volatile U32* paddr = ((U32*) BCM2835_GPIO_BASE) + BCM2835_GPPUDCLK0 / 4 + pin / 32;
+   10958:	e1a002a0 	lsr	r0, r0, #5
+    *paddr = value;
+   1095c:	e7823100 	str	r3, [r2, r0, lsl #2]
+    *paddr = value;
+   10960:	e7823100 	str	r3, [r2, r0, lsl #2]
+    for (volatile U32 i = -1; i > 0; i--); // delay
+   10964:	e58d1004 	str	r1, [sp, #4]
+   10968:	e59d3004 	ldr	r3, [sp, #4]
+   1096c:	e3530000 	cmp	r3, #0
+   10970:	0a000005 	beq	1098c <bcm2835_gpio_set_pud+0x84>
+   10974:	e59d3004 	ldr	r3, [sp, #4]
+   10978:	e2433001 	sub	r3, r3, #1
+   1097c:	e58d3004 	str	r3, [sp, #4]
+   10980:	e59d3004 	ldr	r3, [sp, #4]
+   10984:	e3530000 	cmp	r3, #0
+   10988:	1afffff9 	bne	10974 <bcm2835_gpio_set_pud+0x6c>
+    *paddr = value;
+   1098c:	e3a03000 	mov	r3, #0
+   10990:	e59f1014 	ldr	r1, [pc, #20]	; 109ac <bcm2835_gpio_set_pud+0xa4>
+   10994:	e5813094 	str	r3, [r1, #148]	; 0x94
+    *paddr = value;
+   10998:	e5813094 	str	r3, [r1, #148]	; 0x94
+    *paddr = value;
+   1099c:	e7823100 	str	r3, [r2, r0, lsl #2]
+    *paddr = value;
+   109a0:	e7823100 	str	r3, [r2, r0, lsl #2]
+    bcm2835_gpio_pud(BCM2835_GPIO_PUD_OFF);
+    bcm2835_gpio_pudclk(pin, 0);
+}
+   109a4:	e28dd008 	add	sp, sp, #8
+   109a8:	e12fff1e 	bx	lr
+   109ac:	20200000 	.word	0x20200000
+   109b0:	20200098 	.word	0x20200098
+
+000109b4 <bcm2835_spi_begin>:
+    *paddr = value;
+   109b4:	e3a00000 	mov	r0, #0
+    *paddr = value;
+   109b8:	e3a0c030 	mov	ip, #48	; 0x30
+    U32 ret = *paddr;
+   109bc:	e59f308c 	ldr	r3, [pc, #140]	; 10a50 <bcm2835_spi_begin+0x9c>
+
+void bcm2835_spi_begin(void)
+{
+   109c0:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    U32 ret = *paddr;
+   109c4:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   109c8:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   109cc:	e3c2260e 	bic	r2, r2, #14680064	; 0xe00000
+   109d0:	e3822502 	orr	r2, r2, #8388608	; 0x800000
+    *paddr = value;
+   109d4:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   109d8:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   109dc:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   109e0:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   109e4:	e3c22407 	bic	r2, r2, #117440512	; 0x7000000
+   109e8:	e3822301 	orr	r2, r2, #67108864	; 0x4000000
+    *paddr = value;
+   109ec:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   109f0:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   109f4:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   109f8:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   109fc:	e3c2230e 	bic	r2, r2, #939524096	; 0x38000000
+   10a00:	e3822202 	orr	r2, r2, #536870912	; 0x20000000
+    *paddr = value;
+   10a04:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10a08:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10a0c:	e5932004 	ldr	r2, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   10a10:	e5931004 	ldr	r1, [r3, #4]
+    v = (v & ~mask) | (value & mask);
+   10a14:	e3c22007 	bic	r2, r2, #7
+   10a18:	e3822004 	orr	r2, r2, #4
+    *paddr = value;
+   10a1c:	e5832004 	str	r2, [r3, #4]
+    *paddr = value;
+   10a20:	e5832004 	str	r2, [r3, #4]
+    U32 ret = *paddr;
+   10a24:	e5932004 	ldr	r2, [r3, #4]
+    *paddr = value;
+   10a28:	e59f1024 	ldr	r1, [pc, #36]	; 10a54 <bcm2835_spi_begin+0xa0>
+    v = (v & ~mask) | (value & mask);
+   10a2c:	e3c22038 	bic	r2, r2, #56	; 0x38
+   10a30:	e3822020 	orr	r2, r2, #32
+    *paddr; // Read without assigning to an unused variable
+   10a34:	e593e004 	ldr	lr, [r3, #4]
+    *paddr = value;
+   10a38:	e5832004 	str	r2, [r3, #4]
+    *paddr = value;
+   10a3c:	e5832004 	str	r2, [r3, #4]
+    *paddr = value;
+   10a40:	e5810000 	str	r0, [r1]
+    *paddr = value;
+   10a44:	e5810000 	str	r0, [r1]
+    *paddr = value;
+   10a48:	e581c000 	str	ip, [r1]
+    volatile U32* paddr = ((U32*)BCM2835_SPI0_BASE) + BCM2835_SPI0_CS / 4;
+    bcm2835_peri_write(paddr, 0); // All 0s
+
+    // Clear TX and RX fifos
+    bcm2835_peri_write_nb(paddr, BCM2835_SPI0_CS_CLEAR);
+}
+   10a4c:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+   10a50:	20200000 	.word	0x20200000
+   10a54:	20204000 	.word	0x20204000
+
+00010a58 <bcm2835_spi_end>:
+    U32 ret = *paddr;
+   10a58:	e59f3064 	ldr	r3, [pc, #100]	; 10ac4 <bcm2835_spi_end+0x6c>
+   10a5c:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10a60:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10a64:	e3c2260e 	bic	r2, r2, #14680064	; 0xe00000
+    *paddr = value;
+   10a68:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10a6c:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10a70:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10a74:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10a78:	e3c22407 	bic	r2, r2, #117440512	; 0x7000000
+    *paddr = value;
+   10a7c:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10a80:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10a84:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10a88:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10a8c:	e3c2230e 	bic	r2, r2, #939524096	; 0x38000000
+    *paddr = value;
+   10a90:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10a94:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10a98:	e5932004 	ldr	r2, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   10a9c:	e5931004 	ldr	r1, [r3, #4]
+    v = (v & ~mask) | (value & mask);
+   10aa0:	e3c22007 	bic	r2, r2, #7
+    *paddr = value;
+   10aa4:	e5832004 	str	r2, [r3, #4]
+    *paddr = value;
+   10aa8:	e5832004 	str	r2, [r3, #4]
+    U32 ret = *paddr;
+   10aac:	e5932004 	ldr	r2, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   10ab0:	e5931004 	ldr	r1, [r3, #4]
+    v = (v & ~mask) | (value & mask);
+   10ab4:	e3c22038 	bic	r2, r2, #56	; 0x38
+    *paddr = value;
+   10ab8:	e5832004 	str	r2, [r3, #4]
+    *paddr = value;
+   10abc:	e5832004 	str	r2, [r3, #4]
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_26, BCM2835_GPIO_FSEL_INPT); // CE1
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_24, BCM2835_GPIO_FSEL_INPT); // CE0
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_21, BCM2835_GPIO_FSEL_INPT); // MISO
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_19, BCM2835_GPIO_FSEL_INPT); // MOSI
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_23, BCM2835_GPIO_FSEL_INPT); // CLK
+}
+   10ac0:	e12fff1e 	bx	lr
+   10ac4:	20200000 	.word	0x20200000
+
+00010ac8 <bcm2835_spi_setBitOrder>:
+
+void bcm2835_spi_setBitOrder(U8 order)
+{
+    // BCM2835_SPI_BIT_ORDER_MSBFIRST is the only one supported by SPI0
+    (void) order;
+}
+   10ac8:	e12fff1e 	bx	lr
+
+00010acc <bcm2835_spi_setClockDivider>:
+    *paddr = value;
+   10acc:	e59f3008 	ldr	r3, [pc, #8]	; 10adc <bcm2835_spi_setClockDivider+0x10>
+   10ad0:	e5830008 	str	r0, [r3, #8]
+    *paddr = value;
+   10ad4:	e5830008 	str	r0, [r3, #8]
+// of the APB clock
+void bcm2835_spi_setClockDivider(U16 divider)
+{
+    volatile U32* paddr = ((U32*)BCM2835_SPI0_BASE) + BCM2835_SPI0_CLK / 4;
+    bcm2835_peri_write(paddr, divider);
+}
+   10ad8:	e12fff1e 	bx	lr
+   10adc:	20204000 	.word	0x20204000
+
+00010ae0 <bcm2835_spi_setDataMode>:
+    U32 ret = *paddr;
+   10ae0:	e59f301c 	ldr	r3, [pc, #28]	; 10b04 <bcm2835_spi_setDataMode+0x24>
+   10ae4:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10ae8:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10aec:	e0220100 	eor	r0, r2, r0, lsl #2
+   10af0:	e200000c 	and	r0, r0, #12
+   10af4:	e0200002 	eor	r0, r0, r2
+    *paddr = value;
+   10af8:	e5830000 	str	r0, [r3]
+    *paddr = value;
+   10afc:	e5830000 	str	r0, [r3]
+void bcm2835_spi_setDataMode(U8 mode)
+{
+    volatile U32* paddr = ((U32*)BCM2835_SPI0_BASE) + BCM2835_SPI0_CS / 4;
+    // Mask in the CPO and CPHA bits of CS
+    bcm2835_peri_set_bits(paddr, mode << 2, BCM2835_SPI0_CS_CPOL | BCM2835_SPI0_CS_CPHA);
+}
+   10b00:	e12fff1e 	bx	lr
+   10b04:	20204000 	.word	0x20204000
+
+00010b08 <bcm2835_spi_transfer>:
+    U32 ret = *paddr;
+   10b08:	e59f3068 	ldr	r3, [pc, #104]	; 10b78 <bcm2835_spi_transfer+0x70>
+   10b0c:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10b10:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10b14:	e3822030 	orr	r2, r2, #48	; 0x30
+    *paddr = value;
+   10b18:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10b1c:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10b20:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10b24:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10b28:	e3822080 	orr	r2, r2, #128	; 0x80
+    *paddr = value;
+   10b2c:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10b30:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10b34:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10b38:	e5931000 	ldr	r1, [r3]
+
+    // Set TA = 1
+    bcm2835_peri_set_bits(paddr, BCM2835_SPI0_CS_TA, BCM2835_SPI0_CS_TA);
+
+    // Maybe wait for TXD
+    while (!(bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_TXD));
+   10b3c:	e3120701 	tst	r2, #262144	; 0x40000
+   10b40:	0afffffb 	beq	10b34 <bcm2835_spi_transfer+0x2c>
+    return *paddr;
+   10b44:	e59f202c 	ldr	r2, [pc, #44]	; 10b78 <bcm2835_spi_transfer+0x70>
+    *paddr = value;
+   10b48:	e5830004 	str	r0, [r3, #4]
+    return *paddr;
+   10b4c:	e5923000 	ldr	r3, [r2]
+
+    // Write to FIFO, no barrier
+    bcm2835_peri_write_nb(fifo, value);
+
+    // Wait for DONE to be set
+    while (!(bcm2835_peri_read_nb(paddr) & BCM2835_SPI0_CS_DONE));
+   10b50:	e3130801 	tst	r3, #65536	; 0x10000
+   10b54:	0afffffc 	beq	10b4c <bcm2835_spi_transfer+0x44>
+    return *paddr;
+   10b58:	e5920004 	ldr	r0, [r2, #4]
+    U32 ret = *paddr;
+   10b5c:	e5923000 	ldr	r3, [r2]
+
+    // Set TA = 0, and also set the barrier
+    bcm2835_peri_set_bits(paddr, 0, BCM2835_SPI0_CS_TA);
+
+    return ret;
+}
+   10b60:	e6ef0070 	uxtb	r0, r0
+    v = (v & ~mask) | (value & mask);
+   10b64:	e3c33080 	bic	r3, r3, #128	; 0x80
+    *paddr; // Read without assigning to an unused variable
+   10b68:	e5921000 	ldr	r1, [r2]
+    *paddr = value;
+   10b6c:	e5823000 	str	r3, [r2]
+    *paddr = value;
+   10b70:	e5823000 	str	r3, [r2]
+}
+   10b74:	e12fff1e 	bx	lr
+   10b78:	20204000 	.word	0x20204000
+
+00010b7c <bcm2835_spi_transfernb>:
+
+// Writes (and reads) an number of bytes to SPI
+void bcm2835_spi_transfernb(const U8* tbuf, U8* rbuf, U32 len)
+{
+   10b7c:	e92d40f0 	push	{r4, r5, r6, r7, lr}
+
+    // Set TA = 1
+    bcm2835_peri_set_bits(paddr, BCM2835_SPI0_CS_TA, BCM2835_SPI0_CS_TA);
+
+    // Use the FIFO's to reduce the interbyte times
+    while ((TXCnt < len) || (RXCnt < len))
+   10b80:	e2524000 	subs	r4, r2, #0
+    U32 RXCnt = 0;
+   10b84:	13a02000 	movne	r2, #0
+    U32 ret = *paddr;
+   10b88:	e59f3104 	ldr	r3, [pc, #260]	; 10c94 <bcm2835_spi_transfernb+0x118>
+   10b8c:	11a05001 	movne	r5, r1
+   10b90:	e593c000 	ldr	ip, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10b94:	e593e000 	ldr	lr, [r3]
+    v = (v & ~mask) | (value & mask);
+   10b98:	e38cc030 	orr	ip, ip, #48	; 0x30
+    *paddr = value;
+   10b9c:	e583c000 	str	ip, [r3]
+    *paddr = value;
+   10ba0:	e583c000 	str	ip, [r3]
+    U32 ret = *paddr;
+   10ba4:	e593c000 	ldr	ip, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10ba8:	e593e000 	ldr	lr, [r3]
+    v = (v & ~mask) | (value & mask);
+   10bac:	e38cc080 	orr	ip, ip, #128	; 0x80
+    *paddr = value;
+   10bb0:	e583c000 	str	ip, [r3]
+    *paddr = value;
+   10bb4:	e583c000 	str	ip, [r3]
+    U32 TXCnt = 0;
+   10bb8:	11a0c002 	movne	ip, r2
+    while ((TXCnt < len) || (RXCnt < len))
+   10bbc:	0a00002a 	beq	10c6c <bcm2835_spi_transfernb+0xf0>
+    {
+        // TX fifo not full, so add some more bytes
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_TXD)) && (TXCnt < len))
+   10bc0:	e154000c 	cmp	r4, ip
+   10bc4:	93a01000 	movls	r1, #0
+   10bc8:	83a01001 	movhi	r1, #1
+    U32 ret = *paddr;
+   10bcc:	e593e000 	ldr	lr, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10bd0:	e5936000 	ldr	r6, [r3]
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_TXD)) && (TXCnt < len))
+   10bd4:	e011192e 	ands	r1, r1, lr, lsr #18
+   10bd8:	124c1001 	subne	r1, ip, #1
+   10bdc:	10801001 	addne	r1, r0, r1
+   10be0:	0a000009 	beq	10c0c <bcm2835_spi_transfernb+0x90>
+        {
+            bcm2835_peri_write_nb(fifo, tbuf[TXCnt]);
+            TXCnt++;
+   10be4:	e28cc001 	add	ip, ip, #1
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_TXD)) && (TXCnt < len))
+   10be8:	e154000c 	cmp	r4, ip
+   10bec:	93a0e000 	movls	lr, #0
+   10bf0:	83a0e001 	movhi	lr, #1
+            bcm2835_peri_write_nb(fifo, tbuf[TXCnt]);
+   10bf4:	e5f16001 	ldrb	r6, [r1, #1]!
+    *paddr = value;
+   10bf8:	e5836004 	str	r6, [r3, #4]
+    U32 ret = *paddr;
+   10bfc:	e5936000 	ldr	r6, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10c00:	e5937000 	ldr	r7, [r3]
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_TXD)) && (TXCnt < len))
+   10c04:	e01ee926 	ands	lr, lr, r6, lsr #18
+   10c08:	1afffff5 	bne	10be4 <bcm2835_spi_transfernb+0x68>
+        }
+        //Rx fifo not empty, so get the next received bytes
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)) && (RXCnt < len))
+   10c0c:	e1540002 	cmp	r4, r2
+   10c10:	93a01000 	movls	r1, #0
+   10c14:	83a01001 	movhi	r1, #1
+    U32 ret = *paddr;
+   10c18:	e593e000 	ldr	lr, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10c1c:	e5936000 	ldr	r6, [r3]
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)) && (RXCnt < len))
+   10c20:	e01118ae 	ands	r1, r1, lr, lsr #17
+   10c24:	0a00000b 	beq	10c58 <bcm2835_spi_transfernb+0xdc>
+   10c28:	e2421001 	sub	r1, r2, #1
+   10c2c:	e0851001 	add	r1, r5, r1
+        {
+            rbuf[RXCnt] = bcm2835_peri_read_nb(fifo);
+            RXCnt++;
+   10c30:	e2822001 	add	r2, r2, #1
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)) && (RXCnt < len))
+   10c34:	e1540002 	cmp	r4, r2
+   10c38:	93a0e000 	movls	lr, #0
+   10c3c:	83a0e001 	movhi	lr, #1
+    return *paddr;
+   10c40:	e5936004 	ldr	r6, [r3, #4]
+            rbuf[RXCnt] = bcm2835_peri_read_nb(fifo);
+   10c44:	e5e16001 	strb	r6, [r1, #1]!
+    U32 ret = *paddr;
+   10c48:	e5936000 	ldr	r6, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10c4c:	e5937000 	ldr	r7, [r3]
+        while (((bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)) && (RXCnt < len))
+   10c50:	e01ee8a6 	ands	lr, lr, r6, lsr #17
+   10c54:	1afffff5 	bne	10c30 <bcm2835_spi_transfernb+0xb4>
+    while ((TXCnt < len) || (RXCnt < len))
+   10c58:	e15c0002 	cmp	ip, r2
+   10c5c:	31a0100c 	movcc	r1, ip
+   10c60:	21a01002 	movcs	r1, r2
+   10c64:	e1510004 	cmp	r1, r4
+   10c68:	3affffd4 	bcc	10bc0 <bcm2835_spi_transfernb+0x44>
+    return *paddr;
+   10c6c:	e59f2020 	ldr	r2, [pc, #32]	; 10c94 <bcm2835_spi_transfernb+0x118>
+   10c70:	e5923000 	ldr	r3, [r2]
+        }
+    }
+    // Wait for DONE to be set
+    while (!(bcm2835_peri_read_nb(paddr) & BCM2835_SPI0_CS_DONE));
+   10c74:	e3130801 	tst	r3, #65536	; 0x10000
+   10c78:	0afffffc 	beq	10c70 <bcm2835_spi_transfernb+0xf4>
+    U32 ret = *paddr;
+   10c7c:	e5923000 	ldr	r3, [r2]
+    *paddr; // Read without assigning to an unused variable
+   10c80:	e5921000 	ldr	r1, [r2]
+    v = (v & ~mask) | (value & mask);
+   10c84:	e3c33080 	bic	r3, r3, #128	; 0x80
+    *paddr = value;
+   10c88:	e5823000 	str	r3, [r2]
+    *paddr = value;
+   10c8c:	e5823000 	str	r3, [r2]
+
+    // Set TA = 0, and also set the barrier
+    bcm2835_peri_set_bits(paddr, 0, BCM2835_SPI0_CS_TA);
+}
+   10c90:	e8bd80f0 	pop	{r4, r5, r6, r7, pc}
+   10c94:	20204000 	.word	0x20204000
+
+00010c98 <bcm2835_spi_writenb>:
+    U32 ret = *paddr;
+   10c98:	e59f30c8 	ldr	r3, [pc, #200]	; 10d68 <bcm2835_spi_writenb+0xd0>
+
+    // Set TA = 1
+    bcm2835_peri_set_bits(paddr, BCM2835_SPI0_CS_TA, BCM2835_SPI0_CS_TA);
+
+    U32 i;
+    for (i = 0; i < len; i++)
+   10c9c:	e3510000 	cmp	r1, #0
+    U32 ret = *paddr;
+   10ca0:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10ca4:	e593c000 	ldr	ip, [r3]
+    v = (v & ~mask) | (value & mask);
+   10ca8:	e3822030 	orr	r2, r2, #48	; 0x30
+    *paddr = value;
+   10cac:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10cb0:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10cb4:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10cb8:	e593c000 	ldr	ip, [r3]
+    v = (v & ~mask) | (value & mask);
+   10cbc:	e3822080 	orr	r2, r2, #128	; 0x80
+    *paddr = value;
+   10cc0:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10cc4:	e5832000 	str	r2, [r3]
+    for (i = 0; i < len; i++)
+   10cc8:	0a000013 	beq	10d1c <bcm2835_spi_writenb+0x84>
+   10ccc:	e0801001 	add	r1, r0, r1
+   10cd0:	e241c001 	sub	ip, r1, #1
+   10cd4:	e2400001 	sub	r0, r0, #1
+    U32 ret = *paddr;
+   10cd8:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10cdc:	e5931000 	ldr	r1, [r3]
+    {
+        // Maybe wait for TXD
+        while (!(bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_TXD));
+   10ce0:	e3120701 	tst	r2, #262144	; 0x40000
+   10ce4:	0afffffb 	beq	10cd8 <bcm2835_spi_writenb+0x40>
+
+        // Write to FIFO, no barrier
+        bcm2835_peri_write_nb(fifo, tbuf[i]);
+   10ce8:	e5f02001 	ldrb	r2, [r0, #1]!
+    *paddr = value;
+   10cec:	e5832004 	str	r2, [r3, #4]
+    U32 ret = *paddr;
+   10cf0:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10cf4:	e5931000 	ldr	r1, [r3]
+
+        // Read from FIFO to prevent stalling
+        while (bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)
+   10cf8:	e3120802 	tst	r2, #131072	; 0x20000
+   10cfc:	0a000004 	beq	10d14 <bcm2835_spi_writenb+0x7c>
+    return *paddr;
+   10d00:	e5932004 	ldr	r2, [r3, #4]
+    U32 ret = *paddr;
+   10d04:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10d08:	e5931000 	ldr	r1, [r3]
+        while (bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)
+   10d0c:	e3120802 	tst	r2, #131072	; 0x20000
+   10d10:	1afffffa 	bne	10d00 <bcm2835_spi_writenb+0x68>
+    for (i = 0; i < len; i++)
+   10d14:	e15c0000 	cmp	ip, r0
+   10d18:	1affffee 	bne	10cd8 <bcm2835_spi_writenb+0x40>
+    return *paddr;
+   10d1c:	e59f3044 	ldr	r3, [pc, #68]	; 10d68 <bcm2835_spi_writenb+0xd0>
+   10d20:	e5932000 	ldr	r2, [r3]
+            (void) bcm2835_peri_read_nb(fifo);
+    }
+
+    // Wait for DONE to be set
+    while (!(bcm2835_peri_read_nb(paddr) & BCM2835_SPI0_CS_DONE))
+   10d24:	e3120801 	tst	r2, #65536	; 0x10000
+   10d28:	1a000007 	bne	10d4c <bcm2835_spi_writenb+0xb4>
+    U32 ret = *paddr;
+   10d2c:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10d30:	e5931000 	ldr	r1, [r3]
+    {
+        while (bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)
+   10d34:	e3120802 	tst	r2, #131072	; 0x20000
+    return *paddr;
+   10d38:	15932004 	ldrne	r2, [r3, #4]
+        while (bcm2835_peri_read(paddr) & BCM2835_SPI0_CS_RXD)
+   10d3c:	1afffffa 	bne	10d2c <bcm2835_spi_writenb+0x94>
+    return *paddr;
+   10d40:	e5932000 	ldr	r2, [r3]
+    while (!(bcm2835_peri_read_nb(paddr) & BCM2835_SPI0_CS_DONE))
+   10d44:	e3120801 	tst	r2, #65536	; 0x10000
+   10d48:	0afffff7 	beq	10d2c <bcm2835_spi_writenb+0x94>
+    U32 ret = *paddr;
+   10d4c:	e59f3014 	ldr	r3, [pc, #20]	; 10d68 <bcm2835_spi_writenb+0xd0>
+   10d50:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10d54:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10d58:	e3c22080 	bic	r2, r2, #128	; 0x80
+    *paddr = value;
+   10d5c:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10d60:	e5832000 	str	r2, [r3]
+            (void) bcm2835_peri_read_nb(fifo);
+    }
+
+    // Set TA = 0, and also set the barrier
+    bcm2835_peri_set_bits(paddr, 0, BCM2835_SPI0_CS_TA);
+}
+   10d64:	e12fff1e 	bx	lr
+   10d68:	20204000 	.word	0x20204000
+
+00010d6c <bcm2835_spi_transfern>:
+
+// Writes (and reads) an number of bytes to SPI
+// Read bytes are copied over onto the transmit buffer
+void bcm2835_spi_transfern(U8* buf, U32 len)
+{
+   10d6c:	e1a02001 	mov	r2, r1
+   10d70:	e1a01000 	mov	r1, r0
+    bcm2835_spi_transfernb(buf, buf, len);
+   10d74:	eaffff80 	b	10b7c <bcm2835_spi_transfernb>
+
+00010d78 <bcm2835_spi_chipSelect>:
+    U32 ret = *paddr;
+   10d78:	e59f301c 	ldr	r3, [pc, #28]	; 10d9c <bcm2835_spi_chipSelect+0x24>
+   10d7c:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10d80:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10d84:	e0200002 	eor	r0, r0, r2
+   10d88:	e2000003 	and	r0, r0, #3
+   10d8c:	e0200002 	eor	r0, r0, r2
+    *paddr = value;
+   10d90:	e5830000 	str	r0, [r3]
+    *paddr = value;
+   10d94:	e5830000 	str	r0, [r3]
+void bcm2835_spi_chipSelect(U8 cs)
+{
+    volatile U32* paddr = ((U32*)BCM2835_SPI0_BASE) + BCM2835_SPI0_CS / 4;
+    // Mask in the CS bits of CS
+    bcm2835_peri_set_bits(paddr, cs, BCM2835_SPI0_CS_CS);
+}
+   10d98:	e12fff1e 	bx	lr
+   10d9c:	20204000 	.word	0x20204000
+
+00010da0 <bcm2835_spi_setChipSelectPolarity>:
+void bcm2835_spi_setChipSelectPolarity(U8 cs, U8 active)
+{
+    volatile U32* paddr = ((U32*)BCM2835_SPI0_BASE) + BCM2835_SPI0_CS / 4;
+    U8 shift = 21 + cs;
+    // Mask in the appropriate CSPOLn bit
+    bcm2835_peri_set_bits(paddr, active << shift, 1 << shift);
+   10da0:	e3a0c001 	mov	ip, #1
+    U32 ret = *paddr;
+   10da4:	e59f3028 	ldr	r3, [pc, #40]	; 10dd4 <bcm2835_spi_setChipSelectPolarity+0x34>
+    U8 shift = 21 + cs;
+   10da8:	e2800015 	add	r0, r0, #21
+    U32 ret = *paddr;
+   10dac:	e5932000 	ldr	r2, [r3]
+    bcm2835_peri_set_bits(paddr, active << shift, 1 << shift);
+   10db0:	e6ef0070 	uxtb	r0, r0
+    v = (v & ~mask) | (value & mask);
+   10db4:	e0221011 	eor	r1, r2, r1, lsl r0
+   10db8:	e001101c 	and	r1, r1, ip, lsl r0
+   10dbc:	e0211002 	eor	r1, r1, r2
+{
+   10dc0:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    *paddr; // Read without assigning to an unused variable
+   10dc4:	e593e000 	ldr	lr, [r3]
+    *paddr = value;
+   10dc8:	e5831000 	str	r1, [r3]
+    *paddr = value;
+   10dcc:	e5831000 	str	r1, [r3]
+}
+   10dd0:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+   10dd4:	20204000 	.word	0x20204000
+
+00010dd8 <bcm2835_i2c_begin>:
+    U32 ret = *paddr;
+   10dd8:	e59f306c 	ldr	r3, [pc, #108]	; 10e4c <bcm2835_i2c_begin+0x74>
+
+void bcm2835_i2c_begin(void)
+{
+   10ddc:	e92d4010 	push	{r4, lr}
+    U32 ret = *paddr;
+   10de0:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10de4:	e5930000 	ldr	r0, [r3]
+    v = (v & ~mask) | (value & mask);
+   10de8:	e3c22d07 	bic	r2, r2, #448	; 0x1c0
+   10dec:	e3822c01 	orr	r2, r2, #256	; 0x100
+    *paddr = value;
+   10df0:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10df4:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10df8:	e5932000 	ldr	r2, [r3]
+   10dfc:	e59f104c 	ldr	r1, [pc, #76]	; 10e50 <bcm2835_i2c_begin+0x78>
+    v = (v & ~mask) | (value & mask);
+   10e00:	e3c22c0e 	bic	r2, r2, #3584	; 0xe00
+   10e04:	e3822b02 	orr	r2, r2, #2048	; 0x800
+    *paddr; // Read without assigning to an unused variable
+   10e08:	e5930000 	ldr	r0, [r3]
+    *paddr = value;
+   10e0c:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10e10:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10e14:	e5910014 	ldr	r0, [r1, #20]
+    *paddr; // Read without assigning to an unused variable
+   10e18:	e5913014 	ldr	r3, [r1, #20]
+    // Read the clock divider register
+    U16 cdiv = bcm2835_peri_read(paddr);
+    // Calculate time for transmitting one byte
+    // 1000000 = micros seconds in a second
+    // 9 = Clocks per byte : 8 bits + ACK
+    i2c_byte_wait_us = (I32)(((float) cdiv / BCM2835_CORE_CLK_HZ) * 1000000 * 9);
+   10e1c:	e6ff0070 	uxth	r0, r0
+   10e20:	eb000366 	bl	11bc0 <__aeabi_ui2f>
+   10e24:	e59f1028 	ldr	r1, [pc, #40]	; 10e54 <bcm2835_i2c_begin+0x7c>
+   10e28:	eb000403 	bl	11e3c <__aeabi_fdiv>
+   10e2c:	e59f1024 	ldr	r1, [pc, #36]	; 10e58 <bcm2835_i2c_begin+0x80>
+   10e30:	eb00039b 	bl	11ca4 <__aeabi_fmul>
+   10e34:	e59f1020 	ldr	r1, [pc, #32]	; 10e5c <bcm2835_i2c_begin+0x84>
+   10e38:	eb000399 	bl	11ca4 <__aeabi_fmul>
+   10e3c:	eb000456 	bl	11f9c <__aeabi_f2iz>
+   10e40:	e59f3018 	ldr	r3, [pc, #24]	; 10e60 <bcm2835_i2c_begin+0x88>
+   10e44:	e5830000 	str	r0, [r3]
+}
+   10e48:	e8bd8010 	pop	{r4, pc}
+   10e4c:	20200000 	.word	0x20200000
+   10e50:	20804000 	.word	0x20804000
+   10e54:	4d6e6b28 	.word	0x4d6e6b28
+   10e58:	49742400 	.word	0x49742400
+   10e5c:	41100000 	.word	0x41100000
+   10e60:	00012284 	.word	0x00012284
+
+00010e64 <bcm2835_i2c_end>:
+    U32 ret = *paddr;
+   10e64:	e59f3028 	ldr	r3, [pc, #40]	; 10e94 <bcm2835_i2c_end+0x30>
+   10e68:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10e6c:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10e70:	e3c22d07 	bic	r2, r2, #448	; 0x1c0
+    *paddr = value;
+   10e74:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10e78:	e5832000 	str	r2, [r3]
+    U32 ret = *paddr;
+   10e7c:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   10e80:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   10e84:	e3c22c0e 	bic	r2, r2, #3584	; 0xe00
+    *paddr = value;
+   10e88:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   10e8c:	e5832000 	str	r2, [r3]
+#else
+    // Set all the I2C/BSC1 pins back to input
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_03, BCM2835_GPIO_FSEL_INPT); // SDA
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_05, BCM2835_GPIO_FSEL_INPT); // SCL
+#endif
+}
+   10e90:	e12fff1e 	bx	lr
+   10e94:	20200000 	.word	0x20200000
+
+00010e98 <bcm2835_i2c_setSlaveAddress>:
+    *paddr = value;
+   10e98:	e59f3008 	ldr	r3, [pc, #8]	; 10ea8 <bcm2835_i2c_setSlaveAddress+0x10>
+   10e9c:	e583000c 	str	r0, [r3, #12]
+    *paddr = value;
+   10ea0:	e583000c 	str	r0, [r3, #12]
+    volatile U32* paddr = ((U32*)BCM2835_BSC0_BASE) + BCM2835_BSC_A/4;
+#else
+    volatile U32* paddr = ((U32*)BCM2835_BSC1_BASE) + BCM2835_BSC_A / 4;
+#endif
+    bcm2835_peri_write(paddr, addr);
+}
+   10ea4:	e12fff1e 	bx	lr
+   10ea8:	20804000 	.word	0x20804000
+
+00010eac <bcm2835_i2c_setClockDivider>:
+    *paddr = value;
+   10eac:	e59f2034 	ldr	r2, [pc, #52]	; 10ee8 <bcm2835_i2c_setClockDivider+0x3c>
+
+// defaults to 0x5dc, should result in a 166.666 kHz I2C clock frequency.
+// The divisor must be a power of 2. Odd numbers
+// rounded down.
+void bcm2835_i2c_setClockDivider(U16 divider)
+{
+   10eb0:	e92d4010 	push	{r4, lr}
+    *paddr = value;
+   10eb4:	e5820014 	str	r0, [r2, #20]
+    *paddr = value;
+   10eb8:	e5820014 	str	r0, [r2, #20]
+#endif
+    bcm2835_peri_write(paddr, divider);
+    // Calculate time for transmitting one byte
+    // 1000000 = micros seconds in a second
+    // 9 = Clocks per byte : 8 bits + ACK
+    i2c_byte_wait_us = (I32)(((float) divider / BCM2835_CORE_CLK_HZ) * 1000000 * 9);
+   10ebc:	eb00033f 	bl	11bc0 <__aeabi_ui2f>
+   10ec0:	e59f1024 	ldr	r1, [pc, #36]	; 10eec <bcm2835_i2c_setClockDivider+0x40>
+   10ec4:	eb0003dc 	bl	11e3c <__aeabi_fdiv>
+   10ec8:	e59f1020 	ldr	r1, [pc, #32]	; 10ef0 <bcm2835_i2c_setClockDivider+0x44>
+   10ecc:	eb000374 	bl	11ca4 <__aeabi_fmul>
+   10ed0:	e59f101c 	ldr	r1, [pc, #28]	; 10ef4 <bcm2835_i2c_setClockDivider+0x48>
+   10ed4:	eb000372 	bl	11ca4 <__aeabi_fmul>
+   10ed8:	eb00042f 	bl	11f9c <__aeabi_f2iz>
+   10edc:	e59f4014 	ldr	r4, [pc, #20]	; 10ef8 <bcm2835_i2c_setClockDivider+0x4c>
+   10ee0:	e5840000 	str	r0, [r4]
+}
+   10ee4:	e8bd8010 	pop	{r4, pc}
+   10ee8:	20804000 	.word	0x20804000
+   10eec:	4d6e6b28 	.word	0x4d6e6b28
+   10ef0:	49742400 	.word	0x49742400
+   10ef4:	41100000 	.word	0x41100000
+   10ef8:	00012284 	.word	0x00012284
+
+00010efc <bcm2835_i2c_set_baudrate>:
+
+// set I2C clock divider by means of a baudrate number
+void bcm2835_i2c_set_baudrate(U32 baudrate)
+{
+   10efc:	e92d4010 	push	{r4, lr}
+   10f00:	e1a01000 	mov	r1, r0
+    U32 divider;
+    // use 0xFFFE mask to limit a max value and round down any odd number
+    divider = (BCM2835_CORE_CLK_HZ / baudrate) & 0xFFFE;
+   10f04:	e59f0044 	ldr	r0, [pc, #68]	; 10f50 <bcm2835_i2c_set_baudrate+0x54>
+   10f08:	eb000274 	bl	118e0 <__udivsi3>
+   10f0c:	e59f3040 	ldr	r3, [pc, #64]	; 10f54 <bcm2835_i2c_set_baudrate+0x58>
+    *paddr = value;
+   10f10:	e59f2040 	ldr	r2, [pc, #64]	; 10f58 <bcm2835_i2c_set_baudrate+0x5c>
+    divider = (BCM2835_CORE_CLK_HZ / baudrate) & 0xFFFE;
+   10f14:	e0033000 	and	r3, r3, r0
+    *paddr = value;
+   10f18:	e5823014 	str	r3, [r2, #20]
+    i2c_byte_wait_us = (I32)(((float) divider / BCM2835_CORE_CLK_HZ) * 1000000 * 9);
+   10f1c:	e1a00003 	mov	r0, r3
+    *paddr = value;
+   10f20:	e5823014 	str	r3, [r2, #20]
+    i2c_byte_wait_us = (I32)(((float) divider / BCM2835_CORE_CLK_HZ) * 1000000 * 9);
+   10f24:	eb000325 	bl	11bc0 <__aeabi_ui2f>
+   10f28:	e59f102c 	ldr	r1, [pc, #44]	; 10f5c <bcm2835_i2c_set_baudrate+0x60>
+   10f2c:	eb0003c2 	bl	11e3c <__aeabi_fdiv>
+   10f30:	e59f1028 	ldr	r1, [pc, #40]	; 10f60 <bcm2835_i2c_set_baudrate+0x64>
+   10f34:	eb00035a 	bl	11ca4 <__aeabi_fmul>
+   10f38:	e59f1024 	ldr	r1, [pc, #36]	; 10f64 <bcm2835_i2c_set_baudrate+0x68>
+   10f3c:	eb000358 	bl	11ca4 <__aeabi_fmul>
+   10f40:	eb000415 	bl	11f9c <__aeabi_f2iz>
+   10f44:	e59f401c 	ldr	r4, [pc, #28]	; 10f68 <bcm2835_i2c_set_baudrate+0x6c>
+   10f48:	e5840000 	str	r0, [r4]
+    bcm2835_i2c_setClockDivider((U16) divider);
+}
+   10f4c:	e8bd8010 	pop	{r4, pc}
+   10f50:	0ee6b280 	.word	0x0ee6b280
+   10f54:	0000fffe 	.word	0x0000fffe
+   10f58:	20804000 	.word	0x20804000
+   10f5c:	4d6e6b28 	.word	0x4d6e6b28
+   10f60:	49742400 	.word	0x49742400
+   10f64:	41100000 	.word	0x41100000
+   10f68:	00012284 	.word	0x00012284
+
+00010f6c <bcm2835_i2c_write>:
+
+// Writes an number of bytes to I2C
+U8 bcm2835_i2c_write(const U8* buf, U32 len)
+{
+   10f6c:	e92d4010 	push	{r4, lr}
+    U32 ret = *paddr;
+   10f70:	e59fe144 	ldr	lr, [pc, #324]	; 110bc <bcm2835_i2c_write+0x150>
+    *paddr = value;
+   10f74:	e59f2144 	ldr	r2, [pc, #324]	; 110c0 <bcm2835_i2c_write+0x154>
+    U32 ret = *paddr;
+   10f78:	e59e3000 	ldr	r3, [lr]
+    // Clear Status
+    bcm2835_peri_write_nb(status, BCM2835_BSC_S_CLKT | BCM2835_BSC_S_ERR | BCM2835_BSC_S_DONE);
+    // Set Data Length
+    bcm2835_peri_write_nb(dlen, len);
+    // pre populate FIFO with max buffer
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   10f7c:	e3510000 	cmp	r1, #0
+    v = (v & ~mask) | (value & mask);
+   10f80:	e3833020 	orr	r3, r3, #32
+    *paddr; // Read without assigning to an unused variable
+   10f84:	e59ec000 	ldr	ip, [lr]
+    *paddr = value;
+   10f88:	e58e3000 	str	r3, [lr]
+    *paddr = value;
+   10f8c:	e58e3000 	str	r3, [lr]
+    *paddr = value;
+   10f90:	e58e2004 	str	r2, [lr, #4]
+   10f94:	e58e1008 	str	r1, [lr, #8]
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   10f98:	0a000038 	beq	11080 <bcm2835_i2c_write+0x114>
+   10f9c:	e1a04000 	mov	r4, r0
+    U32 i = 0;
+   10fa0:	e3a03000 	mov	r3, #0
+   10fa4:	e240c001 	sub	ip, r0, #1
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   10fa8:	e2511001 	subs	r1, r1, #1
+   10fac:	13a02001 	movne	r2, #1
+   10fb0:	03a02000 	moveq	r2, #0
+    {
+        bcm2835_peri_write_nb(fifo, buf[i]);
+        i++;
+   10fb4:	e2833001 	add	r3, r3, #1
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   10fb8:	e353000f 	cmp	r3, #15
+   10fbc:	83a02000 	movhi	r2, #0
+   10fc0:	92022001 	andls	r2, r2, #1
+        bcm2835_peri_write_nb(fifo, buf[i]);
+   10fc4:	e5fc0001 	ldrb	r0, [ip, #1]!
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   10fc8:	e3520000 	cmp	r2, #0
+    *paddr = value;
+   10fcc:	e58e0010 	str	r0, [lr, #16]
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   10fd0:	1afffff4 	bne	10fa8 <bcm2835_i2c_write+0x3c>
+    *paddr = value;
+   10fd4:	e59f20e8 	ldr	r2, [pc, #232]	; 110c4 <bcm2835_i2c_write+0x158>
+   10fd8:	e58e2000 	str	r2, [lr]
+    return *paddr;
+   10fdc:	e59e2004 	ldr	r2, [lr, #4]
+
+    // Enable device and start transfer
+    bcm2835_peri_write_nb(control, BCM2835_BSC_C_I2CEN | BCM2835_BSC_C_ST);
+
+    // Transfer is over when BCM2835_BSC_S_DONE
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   10fe0:	e3120002 	tst	r2, #2
+   10fe4:	1a000010 	bne	1102c <bcm2835_i2c_write+0xc0>
+    return *paddr;
+   10fe8:	e59fc0cc 	ldr	ip, [pc, #204]	; 110bc <bcm2835_i2c_write+0x150>
+    {
+        while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_TXD))
+   10fec:	e3510000 	cmp	r1, #0
+   10ff0:	0a000027 	beq	11094 <bcm2835_i2c_write+0x128>
+   10ff4:	e2432001 	sub	r2, r3, #1
+   10ff8:	e0842002 	add	r2, r4, r2
+   10ffc:	ea000004 	b	11014 <bcm2835_i2c_write+0xa8>
+        {
+            // Write to FIFO, no barrier
+            bcm2835_peri_write_nb(fifo, buf[i]);
+   11000:	e5f2e001 	ldrb	lr, [r2, #1]!
+        while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_TXD))
+   11004:	e2511001 	subs	r1, r1, #1
+    *paddr = value;
+   11008:	e58ce010 	str	lr, [ip, #16]
+            i++;
+   1100c:	e2833001 	add	r3, r3, #1
+        while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_TXD))
+   11010:	0a000002 	beq	11020 <bcm2835_i2c_write+0xb4>
+    return *paddr;
+   11014:	e59ce004 	ldr	lr, [ip, #4]
+        while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_TXD))
+   11018:	e31e0010 	tst	lr, #16
+   1101c:	1afffff7 	bne	11000 <bcm2835_i2c_write+0x94>
+    return *paddr;
+   11020:	e59c2004 	ldr	r2, [ip, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   11024:	e3120002 	tst	r2, #2
+   11028:	0affffef 	beq	10fec <bcm2835_i2c_write+0x80>
+    U32 ret = *paddr;
+   1102c:	e59f3088 	ldr	r3, [pc, #136]	; 110bc <bcm2835_i2c_write+0x150>
+   11030:	e5932004 	ldr	r2, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   11034:	e5930004 	ldr	r0, [r3, #4]
+            remaining--;
+        }
+    }
+
+    // Received a NACK
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   11038:	e3120c01 	tst	r2, #256	; 0x100
+    {
+        reason = BCM2835_I2C_REASON_ERROR_NACK;
+   1103c:	13a00001 	movne	r0, #1
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   11040:	1a000007 	bne	11064 <bcm2835_i2c_write+0xf8>
+    U32 ret = *paddr;
+   11044:	e5932004 	ldr	r2, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   11048:	e5933004 	ldr	r3, [r3, #4]
+    }
+
+        // Received Clock Stretch Timeout
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   1104c:	e3120c02 	tst	r2, #512	; 0x200
+    {
+        reason = BCM2835_I2C_REASON_ERROR_CLKT;
+   11050:	13a00002 	movne	r0, #2
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   11054:	1a000002 	bne	11064 <bcm2835_i2c_write+0xf8>
+    }
+
+        // Not all data is sent
+    else if (remaining)
+   11058:	e2511000 	subs	r1, r1, #0
+   1105c:	13a01001 	movne	r1, #1
+   11060:	e1a00101 	lsl	r0, r1, #2
+    U32 ret = *paddr;
+   11064:	e59f3050 	ldr	r3, [pc, #80]	; 110bc <bcm2835_i2c_write+0x150>
+   11068:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   1106c:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   11070:	e3822002 	orr	r2, r2, #2
+    *paddr = value;
+   11074:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   11078:	e5832000 	str	r2, [r3]
+    }
+
+    bcm2835_peri_set_bits(control, BCM2835_BSC_S_DONE, BCM2835_BSC_S_DONE);
+
+    return reason;
+}
+   1107c:	e8bd8010 	pop	{r4, pc}
+    *paddr = value;
+   11080:	e59f303c 	ldr	r3, [pc, #60]	; 110c4 <bcm2835_i2c_write+0x158>
+   11084:	e58e3000 	str	r3, [lr]
+    return *paddr;
+   11088:	e59e3004 	ldr	r3, [lr, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   1108c:	e3130002 	tst	r3, #2
+   11090:	1affffe5 	bne	1102c <bcm2835_i2c_write+0xc0>
+    return *paddr;
+   11094:	e59f3020 	ldr	r3, [pc, #32]	; 110bc <bcm2835_i2c_write+0x150>
+   11098:	e5931004 	ldr	r1, [r3, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   1109c:	e2111002 	ands	r1, r1, #2
+   110a0:	1a000003 	bne	110b4 <bcm2835_i2c_write+0x148>
+    return *paddr;
+   110a4:	e5932004 	ldr	r2, [r3, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   110a8:	e3120002 	tst	r2, #2
+   110ac:	0afffff9 	beq	11098 <bcm2835_i2c_write+0x12c>
+   110b0:	eaffffdd 	b	1102c <bcm2835_i2c_write+0xc0>
+   110b4:	e3a01000 	mov	r1, #0
+   110b8:	eaffffdb 	b	1102c <bcm2835_i2c_write+0xc0>
+   110bc:	20804000 	.word	0x20804000
+   110c0:	00000302 	.word	0x00000302
+   110c4:	00008080 	.word	0x00008080
+
+000110c8 <bcm2835_i2c_read>:
+    U32 ret = *paddr;
+   110c8:	e59fc114 	ldr	ip, [pc, #276]	; 111e4 <bcm2835_i2c_read+0x11c>
+
+// Read an number of bytes from I2C
+U8 bcm2835_i2c_read(U8* buf, U32 len)
+{
+   110cc:	e92d4010 	push	{r4, lr}
+    U32 ret = *paddr;
+   110d0:	e59c3000 	ldr	r3, [ip]
+    *paddr = value;
+   110d4:	e59f210c 	ldr	r2, [pc, #268]	; 111e8 <bcm2835_i2c_read+0x120>
+    v = (v & ~mask) | (value & mask);
+   110d8:	e3833020 	orr	r3, r3, #32
+    *paddr; // Read without assigning to an unused variable
+   110dc:	e59ce000 	ldr	lr, [ip]
+    *paddr = value;
+   110e0:	e58c3000 	str	r3, [ip]
+    *paddr = value;
+   110e4:	e58c3000 	str	r3, [ip]
+    *paddr = value;
+   110e8:	e59f30fc 	ldr	r3, [pc, #252]	; 111ec <bcm2835_i2c_read+0x124>
+   110ec:	e58c2004 	str	r2, [ip, #4]
+   110f0:	e58c1008 	str	r1, [ip, #8]
+   110f4:	e58c3000 	str	r3, [ip]
+    return *paddr;
+   110f8:	e59c2004 	ldr	r2, [ip, #4]
+{
+   110fc:	e1a04000 	mov	r4, r0
+    bcm2835_peri_write_nb(dlen, len);
+    // Start read
+    bcm2835_peri_write_nb(control, BCM2835_BSC_C_I2CEN | BCM2835_BSC_C_ST | BCM2835_BSC_C_READ);
+
+    // wait for transfer to complete
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   11100:	e2122002 	ands	r2, r2, #2
+    U32 i = 0;
+   11104:	13a02000 	movne	r2, #0
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   11108:	1a000011 	bne	11154 <bcm2835_i2c_read+0x8c>
+    return *paddr;
+   1110c:	e59c3004 	ldr	r3, [ip, #4]
+    {
+        // we must empty the FIFO as it is populated and not use any delay
+        while (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   11110:	e3130020 	tst	r3, #32
+   11114:	11a03002 	movne	r3, r2
+   11118:	12422001 	subne	r2, r2, #1
+   1111c:	10842002 	addne	r2, r4, r2
+   11120:	10810003 	addne	r0, r1, r3
+   11124:	0a000007 	beq	11148 <bcm2835_i2c_read+0x80>
+    return *paddr;
+   11128:	e59ce010 	ldr	lr, [ip, #16]
+        {
+            // Read from FIFO, no barrier
+            buf[i] = bcm2835_peri_read_nb(fifo);
+            i++;
+   1112c:	e2833001 	add	r3, r3, #1
+            buf[i] = bcm2835_peri_read_nb(fifo);
+   11130:	e5e2e001 	strb	lr, [r2, #1]!
+    return *paddr;
+   11134:	e59ce004 	ldr	lr, [ip, #4]
+   11138:	e0401003 	sub	r1, r0, r3
+        while (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   1113c:	e31e0020 	tst	lr, #32
+   11140:	1afffff8 	bne	11128 <bcm2835_i2c_read+0x60>
+            i++;
+   11144:	e1a02003 	mov	r2, r3
+    return *paddr;
+   11148:	e59c3004 	ldr	r3, [ip, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   1114c:	e3130002 	tst	r3, #2
+   11150:	0affffed 	beq	1110c <bcm2835_i2c_read+0x44>
+            remaining--;
+        }
+    }
+
+    // transfer has finished - grab any remaining stuff in FIFO
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11154:	e3510000 	cmp	r1, #0
+   11158:	12422001 	subne	r2, r2, #1
+    return *paddr;
+   1115c:	159f3080 	ldrne	r3, [pc, #128]	; 111e4 <bcm2835_i2c_read+0x11c>
+   11160:	10840002 	addne	r0, r4, r2
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11164:	1a000004 	bne	1117c <bcm2835_i2c_read+0xb4>
+   11168:	ea00001b 	b	111dc <bcm2835_i2c_read+0x114>
+    return *paddr;
+   1116c:	e5932010 	ldr	r2, [r3, #16]
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11170:	e2511001 	subs	r1, r1, #1
+    {
+        // Read from FIFO, no barrier
+        buf[i] = bcm2835_peri_read_nb(fifo);
+   11174:	e5e02001 	strb	r2, [r0, #1]!
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11178:	0a000017 	beq	111dc <bcm2835_i2c_read+0x114>
+    return *paddr;
+   1117c:	e5932004 	ldr	r2, [r3, #4]
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11180:	e3120020 	tst	r2, #32
+   11184:	1afffff8 	bne	1116c <bcm2835_i2c_read+0xa4>
+    U32 ret = *paddr;
+   11188:	e59f3054 	ldr	r3, [pc, #84]	; 111e4 <bcm2835_i2c_read+0x11c>
+   1118c:	e5932004 	ldr	r2, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   11190:	e5930004 	ldr	r0, [r3, #4]
+        i++;
+        remaining--;
+    }
+
+    // Received a NACK
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   11194:	e3120c01 	tst	r2, #256	; 0x100
+    {
+        reason = BCM2835_I2C_REASON_ERROR_NACK;
+   11198:	13a00001 	movne	r0, #1
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   1119c:	1a000007 	bne	111c0 <bcm2835_i2c_read+0xf8>
+    U32 ret = *paddr;
+   111a0:	e5932004 	ldr	r2, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   111a4:	e5933004 	ldr	r3, [r3, #4]
+    }
+
+        // Received Clock Stretch Timeout
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   111a8:	e3120c02 	tst	r2, #512	; 0x200
+    {
+        reason = BCM2835_I2C_REASON_ERROR_CLKT;
+   111ac:	13a00002 	movne	r0, #2
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   111b0:	1a000002 	bne	111c0 <bcm2835_i2c_read+0xf8>
+    }
+
+        // Not all data is received
+    else if (remaining)
+   111b4:	e2511000 	subs	r1, r1, #0
+   111b8:	13a01001 	movne	r1, #1
+   111bc:	e1a00101 	lsl	r0, r1, #2
+    U32 ret = *paddr;
+   111c0:	e59f301c 	ldr	r3, [pc, #28]	; 111e4 <bcm2835_i2c_read+0x11c>
+   111c4:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   111c8:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   111cc:	e3822002 	orr	r2, r2, #2
+    *paddr = value;
+   111d0:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   111d4:	e5832000 	str	r2, [r3]
+    }
+
+    bcm2835_peri_set_bits(control, BCM2835_BSC_S_DONE, BCM2835_BSC_S_DONE);
+
+    return reason;
+}
+   111d8:	e8bd8010 	pop	{r4, pc}
+    U32 i = 0;
+   111dc:	e3a01000 	mov	r1, #0
+   111e0:	eaffffe8 	b	11188 <bcm2835_i2c_read+0xc0>
+   111e4:	20804000 	.word	0x20804000
+   111e8:	00000302 	.word	0x00000302
+   111ec:	00008081 	.word	0x00008081
+
+000111f0 <bcm2835_i2c_read_register_rs>:
+    U32 ret = *paddr;
+   111f0:	e59f31c0 	ldr	r3, [pc, #448]	; 113b8 <bcm2835_i2c_read_register_rs+0x1c8>
+
+// Read an number of bytes from I2C sending a repeated start after writing
+// the required register. Only works if your device supports this mode
+U8 bcm2835_i2c_read_register_rs(const U8* regaddr, U8* buf, U32 len)
+{
+   111f4:	e92d4070 	push	{r4, r5, r6, lr}
+    U32 ret = *paddr;
+   111f8:	e593c000 	ldr	ip, [r3]
+    *paddr; // Read without assigning to an unused variable
+   111fc:	e593e000 	ldr	lr, [r3]
+    v = (v & ~mask) | (value & mask);
+   11200:	e38cc020 	orr	ip, ip, #32
+    *paddr = value;
+   11204:	e583c000 	str	ip, [r3]
+    *paddr = value;
+   11208:	e583c000 	str	ip, [r3]
+    *paddr = value;
+   1120c:	e59fc1a8 	ldr	ip, [pc, #424]	; 113bc <bcm2835_i2c_read_register_rs+0x1cc>
+   11210:	e3a0e902 	mov	lr, #32768	; 0x8000
+   11214:	e583c004 	str	ip, [r3, #4]
+   11218:	e3a0c001 	mov	ip, #1
+   1121c:	e583c008 	str	ip, [r3, #8]
+   11220:	e583e000 	str	lr, [r3]
+    bcm2835_peri_write_nb(status, BCM2835_BSC_S_CLKT | BCM2835_BSC_S_ERR | BCM2835_BSC_S_DONE);
+    // Set Data Length
+    bcm2835_peri_write_nb(dlen, 1);
+    // Enable device and start transfer
+    bcm2835_peri_write_nb(control, BCM2835_BSC_C_I2CEN);
+    bcm2835_peri_write_nb(fifo, regaddr[0]);
+   11224:	e5d00000 	ldrb	r0, [r0]
+    *paddr = value;
+   11228:	e59fc190 	ldr	ip, [pc, #400]	; 113c0 <bcm2835_i2c_read_register_rs+0x1d0>
+   1122c:	e5830010 	str	r0, [r3, #16]
+   11230:	e583c000 	str	ip, [r3]
+}
+   11234:	ea000003 	b	11248 <bcm2835_i2c_read_register_rs+0x58>
+    U32 ret = *paddr;
+   11238:	e5930004 	ldr	r0, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   1123c:	e593c004 	ldr	ip, [r3, #4]
+
+    // poll for transfer has started
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_TA))
+    {
+        // Linux may cause us to miss entire transfer stage
+        if (bcm2835_peri_read(status) & BCM2835_BSC_S_DONE)
+   11240:	e3100002 	tst	r0, #2
+   11244:	1a000002 	bne	11254 <bcm2835_i2c_read_register_rs+0x64>
+    return *paddr;
+   11248:	e5930004 	ldr	r0, [r3, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_TA))
+   1124c:	e3100001 	tst	r0, #1
+   11250:	0afffff8 	beq	11238 <bcm2835_i2c_read_register_rs+0x48>
+// Read the System Timer Counter (64-bits)
+U64 bcm2835_st_read(void)
+{
+    U64 st;
+    st = bcm2835_peri_read(&BCM2835_ST->CHI);
+    st <<= 32;
+   11254:	e3a0e000 	mov	lr, #0
+    *paddr = value;
+   11258:	e59f3158 	ldr	r3, [pc, #344]	; 113b8 <bcm2835_i2c_read_register_rs+0x1c8>
+   1125c:	e59f0160 	ldr	r0, [pc, #352]	; 113c4 <bcm2835_i2c_read_register_rs+0x1d4>
+   11260:	e5832008 	str	r2, [r3, #8]
+   11264:	e5830000 	str	r0, [r3]
+    U32 ret = *paddr;
+   11268:	e59f3158 	ldr	r3, [pc, #344]	; 113c8 <bcm2835_i2c_read_register_rs+0x1d8>
+    st <<= 32;
+   1126c:	e1a0500e 	mov	r5, lr
+    U32 ret = *paddr;
+   11270:	e5934008 	ldr	r4, [r3, #8]
+    *paddr; // Read without assigning to an unused variable
+   11274:	e5930008 	ldr	r0, [r3, #8]
+    U32 ret = *paddr;
+   11278:	e593c004 	ldr	ip, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   1127c:	e5930004 	ldr	r0, [r3, #4]
+    bcm2835_st_delay(bcm2835_st_read(), i2c_byte_wait_us * 3);
+   11280:	e59f0144 	ldr	r0, [pc, #324]	; 113cc <bcm2835_i2c_read_register_rs+0x1dc>
+   11284:	e5900000 	ldr	r0, [r0]
+   11288:	e0800080 	add	r0, r0, r0, lsl #1
+}
+
+// Delays for the specified number of microseconds with offset
+void bcm2835_st_delay(U64 offset_micros, U64 micros)
+{
+    U64 compare = offset_micros + micros;
+   1128c:	e090e00e 	adds	lr, r0, lr
+   11290:	e09ee00c 	adds	lr, lr, ip
+   11294:	e0a44fc0 	adc	r4, r4, r0, asr #31
+    U32 ret = *paddr;
+   11298:	e593c008 	ldr	ip, [r3, #8]
+    *paddr; // Read without assigning to an unused variable
+   1129c:	e5930008 	ldr	r0, [r3, #8]
+    U32 ret = *paddr;
+   112a0:	e5930004 	ldr	r0, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   112a4:	e5936004 	ldr	r6, [r3, #4]
+    st += bcm2835_peri_read(&BCM2835_ST->CLO);
+   112a8:	e0800005 	add	r0, r0, r5
+    while (bcm2835_st_read() < compare);
+   112ac:	e150000e 	cmp	r0, lr
+   112b0:	e0dcc004 	sbcs	ip, ip, r4
+   112b4:	3afffff7 	bcc	11298 <bcm2835_i2c_read_register_rs+0xa8>
+    return *paddr;
+   112b8:	e59fc0f8 	ldr	ip, [pc, #248]	; 113b8 <bcm2835_i2c_read_register_rs+0x1c8>
+   112bc:	e59c0004 	ldr	r0, [ip, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   112c0:	e2100002 	ands	r0, r0, #2
+    U32 i = 0;
+   112c4:	13a00000 	movne	r0, #0
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   112c8:	1a00000f 	bne	1130c <bcm2835_i2c_read_register_rs+0x11c>
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   112cc:	e3520000 	cmp	r2, #0
+   112d0:	0a00002f 	beq	11394 <bcm2835_i2c_read_register_rs+0x1a4>
+   112d4:	e2403001 	sub	r3, r0, #1
+   112d8:	e0813003 	add	r3, r1, r3
+   112dc:	ea000004 	b	112f4 <bcm2835_i2c_read_register_rs+0x104>
+    return *paddr;
+   112e0:	e59ce010 	ldr	lr, [ip, #16]
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   112e4:	e2522001 	subs	r2, r2, #1
+            buf[i] = bcm2835_peri_read_nb(fifo);
+   112e8:	e5e3e001 	strb	lr, [r3, #1]!
+            i++;
+   112ec:	e2800001 	add	r0, r0, #1
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   112f0:	0a000002 	beq	11300 <bcm2835_i2c_read_register_rs+0x110>
+    return *paddr;
+   112f4:	e59ce004 	ldr	lr, [ip, #4]
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   112f8:	e31e0020 	tst	lr, #32
+   112fc:	1afffff7 	bne	112e0 <bcm2835_i2c_read_register_rs+0xf0>
+    return *paddr;
+   11300:	e59c3004 	ldr	r3, [ip, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   11304:	e3130002 	tst	r3, #2
+   11308:	0affffef 	beq	112cc <bcm2835_i2c_read_register_rs+0xdc>
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   1130c:	e3520000 	cmp	r2, #0
+   11310:	0a000026 	beq	113b0 <bcm2835_i2c_read_register_rs+0x1c0>
+   11314:	e2400001 	sub	r0, r0, #1
+    return *paddr;
+   11318:	e59f3098 	ldr	r3, [pc, #152]	; 113b8 <bcm2835_i2c_read_register_rs+0x1c8>
+   1131c:	e0811000 	add	r1, r1, r0
+   11320:	ea000003 	b	11334 <bcm2835_i2c_read_register_rs+0x144>
+   11324:	e5930010 	ldr	r0, [r3, #16]
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11328:	e2522001 	subs	r2, r2, #1
+        buf[i] = bcm2835_peri_read_nb(fifo);
+   1132c:	e5e10001 	strb	r0, [r1, #1]!
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11330:	0a00001e 	beq	113b0 <bcm2835_i2c_read_register_rs+0x1c0>
+    return *paddr;
+   11334:	e5930004 	ldr	r0, [r3, #4]
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11338:	e3100020 	tst	r0, #32
+   1133c:	1afffff8 	bne	11324 <bcm2835_i2c_read_register_rs+0x134>
+    U32 ret = *paddr;
+   11340:	e59f3070 	ldr	r3, [pc, #112]	; 113b8 <bcm2835_i2c_read_register_rs+0x1c8>
+   11344:	e5931004 	ldr	r1, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   11348:	e5930004 	ldr	r0, [r3, #4]
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   1134c:	e3110c01 	tst	r1, #256	; 0x100
+        reason = BCM2835_I2C_REASON_ERROR_NACK;
+   11350:	13a00001 	movne	r0, #1
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   11354:	1a000007 	bne	11378 <bcm2835_i2c_read_register_rs+0x188>
+    U32 ret = *paddr;
+   11358:	e5931004 	ldr	r1, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   1135c:	e5933004 	ldr	r3, [r3, #4]
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   11360:	e3110c02 	tst	r1, #512	; 0x200
+        reason = BCM2835_I2C_REASON_ERROR_CLKT;
+   11364:	13a00002 	movne	r0, #2
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   11368:	1a000002 	bne	11378 <bcm2835_i2c_read_register_rs+0x188>
+    else if (remaining)
+   1136c:	e2522000 	subs	r2, r2, #0
+   11370:	13a02001 	movne	r2, #1
+   11374:	e1a00102 	lsl	r0, r2, #2
+    U32 ret = *paddr;
+   11378:	e59f3038 	ldr	r3, [pc, #56]	; 113b8 <bcm2835_i2c_read_register_rs+0x1c8>
+   1137c:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   11380:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   11384:	e3822002 	orr	r2, r2, #2
+    *paddr = value;
+   11388:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   1138c:	e5832000 	str	r2, [r3]
+}
+   11390:	e8bd8070 	pop	{r4, r5, r6, pc}
+    return *paddr;
+   11394:	e59f301c 	ldr	r3, [pc, #28]	; 113b8 <bcm2835_i2c_read_register_rs+0x1c8>
+   11398:	e5932004 	ldr	r2, [r3, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   1139c:	e3120002 	tst	r2, #2
+   113a0:	1a000002 	bne	113b0 <bcm2835_i2c_read_register_rs+0x1c0>
+    return *paddr;
+   113a4:	e5932004 	ldr	r2, [r3, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   113a8:	e3120002 	tst	r2, #2
+   113ac:	0afffff9 	beq	11398 <bcm2835_i2c_read_register_rs+0x1a8>
+    U32 i = 0;
+   113b0:	e3a02000 	mov	r2, #0
+   113b4:	eaffffe1 	b	11340 <bcm2835_i2c_read_register_rs+0x150>
+   113b8:	20804000 	.word	0x20804000
+   113bc:	00000302 	.word	0x00000302
+   113c0:	00008080 	.word	0x00008080
+   113c4:	00008081 	.word	0x00008081
+   113c8:	20003000 	.word	0x20003000
+   113cc:	00012284 	.word	0x00012284
+
+000113d0 <bcm2835_i2c_write_read_rs>:
+{
+   113d0:	e92d40f0 	push	{r4, r5, r6, r7, lr}
+    U32 ret = *paddr;
+   113d4:	e59f61f8 	ldr	r6, [pc, #504]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+    *paddr = value;
+   113d8:	e59fe1f8 	ldr	lr, [pc, #504]	; 115d8 <bcm2835_i2c_write_read_rs+0x208>
+    U32 ret = *paddr;
+   113dc:	e596c000 	ldr	ip, [r6]
+    *paddr; // Read without assigning to an unused variable
+   113e0:	e5964000 	ldr	r4, [r6]
+    v = (v & ~mask) | (value & mask);
+   113e4:	e38cc020 	orr	ip, ip, #32
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   113e8:	e2514000 	subs	r4, r1, #0
+    *paddr = value;
+   113ec:	e586c000 	str	ip, [r6]
+    *paddr = value;
+   113f0:	e586c000 	str	ip, [r6]
+    *paddr = value;
+   113f4:	e586e004 	str	lr, [r6, #4]
+   113f8:	e5861008 	str	r1, [r6, #8]
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   113fc:	0a000010 	beq	11444 <bcm2835_i2c_write_read_rs+0x74>
+   11400:	e1a05000 	mov	r5, r0
+   11404:	e240e001 	sub	lr, r0, #1
+        bcm2835_peri_write_nb(fifo, cmds[i]);
+   11408:	e1a0c00e 	mov	ip, lr
+   1140c:	e5fe7001 	ldrb	r7, [lr, #1]!
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   11410:	e28cc002 	add	ip, ip, #2
+   11414:	e04cc005 	sub	ip, ip, r5
+   11418:	e045100e 	sub	r1, r5, lr
+   1141c:	e35c000f 	cmp	ip, #15
+   11420:	e2640000 	rsb	r0, r4, #0
+   11424:	e2411001 	sub	r1, r1, #1
+   11428:	83a0c000 	movhi	ip, #0
+   1142c:	93a0c001 	movls	ip, #1
+   11430:	e1500001 	cmp	r0, r1
+   11434:	03a0c000 	moveq	ip, #0
+   11438:	e35c0000 	cmp	ip, #0
+    *paddr = value;
+   1143c:	e5867010 	str	r7, [r6, #16]
+    while (remaining && (i < BCM2835_BSC_FIFO_SIZE))
+   11440:	1afffff0 	bne	11408 <bcm2835_i2c_write_read_rs+0x38>
+    *paddr = value;
+   11444:	e59f1188 	ldr	r1, [pc, #392]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+   11448:	e59f018c 	ldr	r0, [pc, #396]	; 115dc <bcm2835_i2c_write_read_rs+0x20c>
+   1144c:	e5810000 	str	r0, [r1]
+}
+   11450:	ea000003 	b	11464 <bcm2835_i2c_write_read_rs+0x94>
+    U32 ret = *paddr;
+   11454:	e5910004 	ldr	r0, [r1, #4]
+    *paddr; // Read without assigning to an unused variable
+   11458:	e591c004 	ldr	ip, [r1, #4]
+        if (bcm2835_peri_read(status) & BCM2835_BSC_S_DONE)
+   1145c:	e3100002 	tst	r0, #2
+   11460:	1a000002 	bne	11470 <bcm2835_i2c_write_read_rs+0xa0>
+    return *paddr;
+   11464:	e5910004 	ldr	r0, [r1, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_TA))
+   11468:	e3100001 	tst	r0, #1
+   1146c:	0afffff8 	beq	11454 <bcm2835_i2c_write_read_rs+0x84>
+    bcm2835_st_delay(bcm2835_st_read(), i2c_byte_wait_us * (cmds_len + 1));
+   11470:	e284c001 	add	ip, r4, #1
+    st <<= 32;
+   11474:	e3a04000 	mov	r4, #0
+    *paddr = value;
+   11478:	e59f1154 	ldr	r1, [pc, #340]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+   1147c:	e59f015c 	ldr	r0, [pc, #348]	; 115e0 <bcm2835_i2c_write_read_rs+0x210>
+   11480:	e5813008 	str	r3, [r1, #8]
+   11484:	e5810000 	str	r0, [r1]
+    U32 ret = *paddr;
+   11488:	e59f0154 	ldr	r0, [pc, #340]	; 115e4 <bcm2835_i2c_write_read_rs+0x214>
+   1148c:	e5905008 	ldr	r5, [r0, #8]
+    *paddr; // Read without assigning to an unused variable
+   11490:	e5901008 	ldr	r1, [r0, #8]
+    bcm2835_st_delay(bcm2835_st_read(), i2c_byte_wait_us * (cmds_len + 1));
+   11494:	e59f114c 	ldr	r1, [pc, #332]	; 115e8 <bcm2835_i2c_write_read_rs+0x218>
+   11498:	e5911000 	ldr	r1, [r1]
+   1149c:	e00c0c91 	mul	ip, r1, ip
+    U32 ret = *paddr;
+   114a0:	e5901004 	ldr	r1, [r0, #4]
+    *paddr; // Read without assigning to an unused variable
+   114a4:	e590e004 	ldr	lr, [r0, #4]
+    st += bcm2835_peri_read(&BCM2835_ST->CLO);
+   114a8:	e0911004 	adds	r1, r1, r4
+    U64 compare = offset_micros + micros;
+   114ac:	e09cc001 	adds	ip, ip, r1
+   114b0:	e2a55000 	adc	r5, r5, #0
+    U32 ret = *paddr;
+   114b4:	e590e008 	ldr	lr, [r0, #8]
+    *paddr; // Read without assigning to an unused variable
+   114b8:	e5901008 	ldr	r1, [r0, #8]
+    U32 ret = *paddr;
+   114bc:	e5901004 	ldr	r1, [r0, #4]
+    *paddr; // Read without assigning to an unused variable
+   114c0:	e5906004 	ldr	r6, [r0, #4]
+    st += bcm2835_peri_read(&BCM2835_ST->CLO);
+   114c4:	e0811004 	add	r1, r1, r4
+    while (bcm2835_st_read() < compare);
+   114c8:	e151000c 	cmp	r1, ip
+   114cc:	e0dee005 	sbcs	lr, lr, r5
+   114d0:	3afffff7 	bcc	114b4 <bcm2835_i2c_write_read_rs+0xe4>
+    return *paddr;
+   114d4:	e59fc0f8 	ldr	ip, [pc, #248]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+   114d8:	e59c0004 	ldr	r0, [ip, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   114dc:	e2100002 	ands	r0, r0, #2
+    i = 0;
+   114e0:	13a00000 	movne	r0, #0
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   114e4:	1a00000f 	bne	11528 <bcm2835_i2c_write_read_rs+0x158>
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   114e8:	e3530000 	cmp	r3, #0
+   114ec:	0a00002f 	beq	115b0 <bcm2835_i2c_write_read_rs+0x1e0>
+   114f0:	e2401001 	sub	r1, r0, #1
+   114f4:	e0821001 	add	r1, r2, r1
+   114f8:	ea000004 	b	11510 <bcm2835_i2c_write_read_rs+0x140>
+    return *paddr;
+   114fc:	e59ce010 	ldr	lr, [ip, #16]
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   11500:	e2533001 	subs	r3, r3, #1
+            buf[i] = bcm2835_peri_read_nb(fifo);
+   11504:	e5e1e001 	strb	lr, [r1, #1]!
+            i++;
+   11508:	e2800001 	add	r0, r0, #1
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   1150c:	0a000002 	beq	1151c <bcm2835_i2c_write_read_rs+0x14c>
+    return *paddr;
+   11510:	e59ce004 	ldr	lr, [ip, #4]
+        while (remaining && bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD)
+   11514:	e31e0020 	tst	lr, #32
+   11518:	1afffff7 	bne	114fc <bcm2835_i2c_write_read_rs+0x12c>
+    return *paddr;
+   1151c:	e59c1004 	ldr	r1, [ip, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   11520:	e3110002 	tst	r1, #2
+   11524:	0affffef 	beq	114e8 <bcm2835_i2c_write_read_rs+0x118>
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11528:	e3530000 	cmp	r3, #0
+   1152c:	0a000026 	beq	115cc <bcm2835_i2c_write_read_rs+0x1fc>
+   11530:	e2400001 	sub	r0, r0, #1
+    return *paddr;
+   11534:	e59f1098 	ldr	r1, [pc, #152]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+   11538:	e0822000 	add	r2, r2, r0
+   1153c:	ea000003 	b	11550 <bcm2835_i2c_write_read_rs+0x180>
+   11540:	e5910010 	ldr	r0, [r1, #16]
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11544:	e2533001 	subs	r3, r3, #1
+        buf[i] = bcm2835_peri_read_nb(fifo);
+   11548:	e5e20001 	strb	r0, [r2, #1]!
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   1154c:	0a00001e 	beq	115cc <bcm2835_i2c_write_read_rs+0x1fc>
+    return *paddr;
+   11550:	e5910004 	ldr	r0, [r1, #4]
+    while (remaining && (bcm2835_peri_read_nb(status) & BCM2835_BSC_S_RXD))
+   11554:	e3100020 	tst	r0, #32
+   11558:	1afffff8 	bne	11540 <bcm2835_i2c_write_read_rs+0x170>
+    U32 ret = *paddr;
+   1155c:	e59f2070 	ldr	r2, [pc, #112]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+   11560:	e5921004 	ldr	r1, [r2, #4]
+    *paddr; // Read without assigning to an unused variable
+   11564:	e5920004 	ldr	r0, [r2, #4]
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   11568:	e3110c01 	tst	r1, #256	; 0x100
+        reason = BCM2835_I2C_REASON_ERROR_NACK;
+   1156c:	13a00001 	movne	r0, #1
+    if (bcm2835_peri_read(status) & BCM2835_BSC_S_ERR)
+   11570:	1a000007 	bne	11594 <bcm2835_i2c_write_read_rs+0x1c4>
+    U32 ret = *paddr;
+   11574:	e5921004 	ldr	r1, [r2, #4]
+    *paddr; // Read without assigning to an unused variable
+   11578:	e5922004 	ldr	r2, [r2, #4]
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   1157c:	e3110c02 	tst	r1, #512	; 0x200
+        reason = BCM2835_I2C_REASON_ERROR_CLKT;
+   11580:	13a00002 	movne	r0, #2
+    else if (bcm2835_peri_read(status) & BCM2835_BSC_S_CLKT)
+   11584:	1a000002 	bne	11594 <bcm2835_i2c_write_read_rs+0x1c4>
+    else if (remaining)
+   11588:	e2533000 	subs	r3, r3, #0
+   1158c:	13a03001 	movne	r3, #1
+   11590:	e1a00103 	lsl	r0, r3, #2
+    U32 ret = *paddr;
+   11594:	e59f3038 	ldr	r3, [pc, #56]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+   11598:	e5932000 	ldr	r2, [r3]
+    *paddr; // Read without assigning to an unused variable
+   1159c:	e5931000 	ldr	r1, [r3]
+    v = (v & ~mask) | (value & mask);
+   115a0:	e3822002 	orr	r2, r2, #2
+    *paddr = value;
+   115a4:	e5832000 	str	r2, [r3]
+    *paddr = value;
+   115a8:	e5832000 	str	r2, [r3]
+}
+   115ac:	e8bd80f0 	pop	{r4, r5, r6, r7, pc}
+    return *paddr;
+   115b0:	e59f301c 	ldr	r3, [pc, #28]	; 115d4 <bcm2835_i2c_write_read_rs+0x204>
+   115b4:	e5932004 	ldr	r2, [r3, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   115b8:	e3120002 	tst	r2, #2
+   115bc:	1a000002 	bne	115cc <bcm2835_i2c_write_read_rs+0x1fc>
+    return *paddr;
+   115c0:	e5932004 	ldr	r2, [r3, #4]
+    while (!(bcm2835_peri_read_nb(status) & BCM2835_BSC_S_DONE))
+   115c4:	e3120002 	tst	r2, #2
+   115c8:	0afffff9 	beq	115b4 <bcm2835_i2c_write_read_rs+0x1e4>
+    i = 0;
+   115cc:	e3a03000 	mov	r3, #0
+   115d0:	eaffffe1 	b	1155c <bcm2835_i2c_write_read_rs+0x18c>
+   115d4:	20804000 	.word	0x20804000
+   115d8:	00000302 	.word	0x00000302
+   115dc:	00008080 	.word	0x00008080
+   115e0:	00008081 	.word	0x00008081
+   115e4:	20003000 	.word	0x20003000
+   115e8:	00012284 	.word	0x00012284
+
+000115ec <bcm2835_st_read>:
+    U32 ret = *paddr;
+   115ec:	e59f3010 	ldr	r3, [pc, #16]	; 11604 <bcm2835_st_read+0x18>
+   115f0:	e5931008 	ldr	r1, [r3, #8]
+    *paddr; // Read without assigning to an unused variable
+   115f4:	e5932008 	ldr	r2, [r3, #8]
+    U32 ret = *paddr;
+   115f8:	e5930004 	ldr	r0, [r3, #4]
+    *paddr; // Read without assigning to an unused variable
+   115fc:	e5933004 	ldr	r3, [r3, #4]
+}
+   11600:	e12fff1e 	bx	lr
+   11604:	20003000 	.word	0x20003000
+
+00011608 <bcm2835_st_delay>:
+{
+   11608:	e92d4010 	push	{r4, lr}
+    st <<= 32;
+   1160c:	e3a04000 	mov	r4, #0
+    U64 compare = offset_micros + micros;
+   11610:	e0900002 	adds	r0, r0, r2
+    U32 ret = *paddr;
+   11614:	e59fc024 	ldr	ip, [pc, #36]	; 11640 <bcm2835_st_delay+0x38>
+    U64 compare = offset_micros + micros;
+   11618:	e0a11003 	adc	r1, r1, r3
+    U32 ret = *paddr;
+   1161c:	e59c2008 	ldr	r2, [ip, #8]
+    *paddr; // Read without assigning to an unused variable
+   11620:	e59c3008 	ldr	r3, [ip, #8]
+    U32 ret = *paddr;
+   11624:	e59ce004 	ldr	lr, [ip, #4]
+    *paddr; // Read without assigning to an unused variable
+   11628:	e59c3004 	ldr	r3, [ip, #4]
+    st += bcm2835_peri_read(&BCM2835_ST->CLO);
+   1162c:	e08ee004 	add	lr, lr, r4
+    while (bcm2835_st_read() < compare);
+   11630:	e15e0000 	cmp	lr, r0
+   11634:	e0d22001 	sbcs	r2, r2, r1
+   11638:	3afffff7 	bcc	1161c <bcm2835_st_delay+0x14>
+   1163c:	e8bd8010 	pop	{r4, pc}
+   11640:	20003000 	.word	0x20003000
+
+00011644 <bcm2835_pwm_set_clock>:
+    *paddr = value;
+   11644:	e59f303c 	ldr	r3, [pc, #60]	; 11688 <bcm2835_pwm_set_clock+0x44>
+   11648:	e59f203c 	ldr	r2, [pc, #60]	; 1168c <bcm2835_pwm_set_clock+0x48>
+   1164c:	e58320a0 	str	r2, [r3, #160]	; 0xa0
+    *paddr = value;
+   11650:	e58320a0 	str	r2, [r3, #160]	; 0xa0
+    U32 ret = *paddr;
+   11654:	e59320a0 	ldr	r2, [r3, #160]	; 0xa0
+    *paddr; // Read without assigning to an unused variable
+   11658:	e59310a0 	ldr	r1, [r3, #160]	; 0xa0
+
+    // Stop PWM clock
+    bcm2835_peri_write(((U32*)BCM2835_CLOCK_BASE) + BCM2835_PWMCLK_CNTL, BCM2835_PWM_PASSWRD | 0x01);
+
+    // Wait for the clock to be not busy
+    while ((bcm2835_peri_read(((U32*)BCM2835_CLOCK_BASE) + BCM2835_PWMCLK_CNTL) & 0x80) != 0);
+   1165c:	e3120080 	tst	r2, #128	; 0x80
+   11660:	1afffffb 	bne	11654 <bcm2835_pwm_set_clock+0x10>
+
+    // set the clock divider and enable PWM clock
+    bcm2835_peri_write(((U32*)BCM2835_CLOCK_BASE) + BCM2835_PWMCLK_DIV, BCM2835_PWM_PASSWRD | (divisor << 12));
+   11664:	e59f2024 	ldr	r2, [pc, #36]	; 11690 <bcm2835_pwm_set_clock+0x4c>
+    *paddr = value;
+   11668:	e59f1024 	ldr	r1, [pc, #36]	; 11694 <bcm2835_pwm_set_clock+0x50>
+    bcm2835_peri_write(((U32*)BCM2835_CLOCK_BASE) + BCM2835_PWMCLK_DIV, BCM2835_PWM_PASSWRD | (divisor << 12));
+   1166c:	e0022600 	and	r2, r2, r0, lsl #12
+   11670:	e382245a 	orr	r2, r2, #1509949440	; 0x5a000000
+    *paddr = value;
+   11674:	e58320a4 	str	r2, [r3, #164]	; 0xa4
+    *paddr = value;
+   11678:	e58320a4 	str	r2, [r3, #164]	; 0xa4
+    *paddr = value;
+   1167c:	e58310a0 	str	r1, [r3, #160]	; 0xa0
+    *paddr = value;
+   11680:	e58310a0 	str	r1, [r3, #160]	; 0xa0
+    bcm2835_peri_write(((U32*)BCM2835_CLOCK_BASE) + BCM2835_PWMCLK_CNTL, BCM2835_PWM_PASSWRD | 0x11); // Source=osc and enable
+}
+   11684:	e12fff1e 	bx	lr
+   11688:	20101000 	.word	0x20101000
+   1168c:	5a000001 	.word	0x5a000001
+   11690:	00fff000 	.word	0x00fff000
+   11694:	5a000011 	.word	0x5a000011
+
+00011698 <bcm2835_pwm_set_mode>:
+    U32 ret = *paddr;
+   11698:	e59fc054 	ldr	ip, [pc, #84]	; 116f4 <bcm2835_pwm_set_mode+0x5c>
+
+void bcm2835_pwm_set_mode(U8 channel, U8 markspace, U8 enabled)
+{
+    U32 control = bcm2835_peri_read((U32*)BCM2835_GPIO_PWM + BCM2835_PWM_CONTROL);
+
+    if (channel == 0)
+   1169c:	e3500000 	cmp	r0, #0
+    U32 ret = *paddr;
+   116a0:	e59c3000 	ldr	r3, [ip]
+    *paddr; // Read without assigning to an unused variable
+   116a4:	e59cc000 	ldr	ip, [ip]
+    if (channel == 0)
+   116a8:	1a000008 	bne	116d0 <bcm2835_pwm_set_mode+0x38>
+    {
+        if (markspace)
+   116ac:	e3510000 	cmp	r1, #0
+            control |= BCM2835_PWM0_MS_MODE;
+   116b0:	13833080 	orrne	r3, r3, #128	; 0x80
+        else
+            control &= ~BCM2835_PWM0_MS_MODE;
+   116b4:	03c33080 	biceq	r3, r3, #128	; 0x80
+        if (enabled)
+   116b8:	e3520000 	cmp	r2, #0
+            control |= BCM2835_PWM0_ENABLE;
+   116bc:	13833001 	orrne	r3, r3, #1
+        else
+            control &= ~BCM2835_PWM0_ENABLE;
+   116c0:	03c33001 	biceq	r3, r3, #1
+    *paddr = value;
+   116c4:	e59f2028 	ldr	r2, [pc, #40]	; 116f4 <bcm2835_pwm_set_mode+0x5c>
+   116c8:	e5823000 	str	r3, [r2]
+
+    // If you use the barrier here, weird things happen, and the commands don't work
+    bcm2835_peri_write_nb((U32*)BCM2835_GPIO_PWM + BCM2835_PWM_CONTROL, control);
+    //  bcm2835_peri_write_nb(bcm2835_pwm + BCM2835_PWM_CONTROL, BCM2835_PWM0_ENABLE | BCM2835_PWM1_ENABLE | BCM2835_PWM0_MS_MODE | BCM2835_PWM1_MS_MODE);
+
+}
+   116cc:	e12fff1e 	bx	lr
+    else if (channel == 1)
+   116d0:	e3500001 	cmp	r0, #1
+   116d4:	1afffffa 	bne	116c4 <bcm2835_pwm_set_mode+0x2c>
+        if (markspace)
+   116d8:	e3510000 	cmp	r1, #0
+            control |= BCM2835_PWM1_MS_MODE;
+   116dc:	13833902 	orrne	r3, r3, #32768	; 0x8000
+            control &= ~BCM2835_PWM1_MS_MODE;
+   116e0:	03c33902 	biceq	r3, r3, #32768	; 0x8000
+        if (enabled)
+   116e4:	e3520000 	cmp	r2, #0
+            control |= BCM2835_PWM1_ENABLE;
+   116e8:	13833c01 	orrne	r3, r3, #256	; 0x100
+            control &= ~BCM2835_PWM1_ENABLE;
+   116ec:	03c33c01 	biceq	r3, r3, #256	; 0x100
+   116f0:	eafffff3 	b	116c4 <bcm2835_pwm_set_mode+0x2c>
+   116f4:	2020c000 	.word	0x2020c000
+
+000116f8 <bcm2835_pwm_set_range>:
+
+void bcm2835_pwm_set_range(U8 channel, U32 range)
+{
+    if (channel == 0)
+   116f8:	e3500000 	cmp	r0, #0
+   116fc:	1a000002 	bne	1170c <bcm2835_pwm_set_range+0x14>
+    *paddr = value;
+   11700:	e59f3014 	ldr	r3, [pc, #20]	; 1171c <bcm2835_pwm_set_range+0x24>
+   11704:	e5831010 	str	r1, [r3, #16]
+}
+   11708:	e12fff1e 	bx	lr
+        bcm2835_peri_write_nb((U32*)BCM2835_GPIO_PWM + BCM2835_PWM0_RANGE, range);
+    else if (channel == 1)
+   1170c:	e3500001 	cmp	r0, #1
+    *paddr = value;
+   11710:	059f3004 	ldreq	r3, [pc, #4]	; 1171c <bcm2835_pwm_set_range+0x24>
+   11714:	05831020 	streq	r1, [r3, #32]
+        bcm2835_peri_write_nb((U32*)BCM2835_GPIO_PWM + BCM2835_PWM1_RANGE, range);
+}
+   11718:	e12fff1e 	bx	lr
+   1171c:	2020c000 	.word	0x2020c000
+
+00011720 <bcm2835_pwm_set_data>:
+
+void bcm2835_pwm_set_data(U8 channel, U32 data)
+{
+    if (channel == 0)
+   11720:	e3500000 	cmp	r0, #0
+   11724:	1a000002 	bne	11734 <bcm2835_pwm_set_data+0x14>
+    *paddr = value;
+   11728:	e59f3014 	ldr	r3, [pc, #20]	; 11744 <bcm2835_pwm_set_data+0x24>
+   1172c:	e5831014 	str	r1, [r3, #20]
+}
+   11730:	e12fff1e 	bx	lr
+        bcm2835_peri_write_nb((U32*)BCM2835_GPIO_PWM + BCM2835_PWM0_DATA, data);
+    else if (channel == 1)
+   11734:	e3500001 	cmp	r0, #1
+    *paddr = value;
+   11738:	059f3004 	ldreq	r3, [pc, #4]	; 11744 <bcm2835_pwm_set_data+0x24>
+   1173c:	05831024 	streq	r1, [r3, #36]	; 0x24
+        bcm2835_peri_write_nb((U32*)BCM2835_GPIO_PWM + BCM2835_PWM1_DATA, data);
+}
+   11740:	e12fff1e 	bx	lr
+   11744:	2020c000 	.word	0x2020c000
+   11748:	e3a0c0ff 	mov	ip, #255	; 0xff
+   1174c:	e01c2ba0 	ands	r2, ip, r0, lsr #23
+   11750:	101c3ba1 	andsne	r3, ip, r1, lsr #23
+   11754:	1132000c 	teqne	r2, ip
+   11758:	1133000c 	teqne	r3, ip
+   1175c:	0a00003e 	beq	1185c <bcm2835_pwm_set_data+0x13c>
+   11760:	e0822003 	add	r2, r2, r3
+   11764:	e020c001 	eor	ip, r0, r1
+   11768:	e1b00480 	lsls	r0, r0, #9
+   1176c:	11b01481 	lslsne	r1, r1, #9
+   11770:	0a000010 	beq	117b8 <bcm2835_pwm_set_data+0x98>
+   11774:	e3a03302 	mov	r3, #134217728	; 0x8000000
+   11778:	e18302a0 	orr	r0, r3, r0, lsr #5
+   1177c:	e18312a1 	orr	r1, r3, r1, lsr #5
+   11780:	e0813190 	umull	r3, r1, r0, r1
+   11784:	e20c0102 	and	r0, ip, #-2147483648	; 0x80000000
+   11788:	e3510502 	cmp	r1, #8388608	; 0x800000
+   1178c:	31a01081 	lslcc	r1, r1, #1
+   11790:	31811fa3 	orrcc	r1, r1, r3, lsr #31
+   11794:	31a03083 	lslcc	r3, r3, #1
+   11798:	e1800001 	orr	r0, r0, r1
+   1179c:	e2c2207f 	sbc	r2, r2, #127	; 0x7f
+   117a0:	e35200fd 	cmp	r2, #253	; 0xfd
+   117a4:	8a00000f 	bhi	117e8 <bcm2835_pwm_set_data+0xc8>
+   117a8:	e3530102 	cmp	r3, #-2147483648	; 0x80000000
+   117ac:	e0a00b82 	adc	r0, r0, r2, lsl #23
+   117b0:	03c00001 	biceq	r0, r0, #1
+   117b4:	e12fff1e 	bx	lr
+   117b8:	e3300000 	teq	r0, #0
+   117bc:	e20cc102 	and	ip, ip, #-2147483648	; 0x80000000
+   117c0:	01a01481 	lsleq	r1, r1, #9
+   117c4:	e18c04a0 	orr	r0, ip, r0, lsr #9
+   117c8:	e18004a1 	orr	r0, r0, r1, lsr #9
+   117cc:	e252207f 	subs	r2, r2, #127	; 0x7f
+   117d0:	c27230ff 	rsbsgt	r3, r2, #255	; 0xff
+   117d4:	c1800b82 	orrgt	r0, r0, r2, lsl #23
+   117d8:	c12fff1e 	bxgt	lr
+   117dc:	e3800502 	orr	r0, r0, #8388608	; 0x800000
+   117e0:	e3a03000 	mov	r3, #0
+   117e4:	e2522001 	subs	r2, r2, #1
+   117e8:	ca000035 	bgt	118c4 <bcm2835_pwm_set_data+0x1a4>
+   117ec:	e3720019 	cmn	r2, #25
+   117f0:	d2000102 	andle	r0, r0, #-2147483648	; 0x80000000
+   117f4:	d12fff1e 	bxle	lr
+   117f8:	e2622000 	rsb	r2, r2, #0
+   117fc:	e1b01080 	lsls	r1, r0, #1
+   11800:	e1a01231 	lsr	r1, r1, r2
+   11804:	e2622020 	rsb	r2, r2, #32
+   11808:	e1a0c210 	lsl	ip, r0, r2
+   1180c:	e1b00061 	rrxs	r0, r1
+   11810:	e2a00000 	adc	r0, r0, #0
+   11814:	e193308c 	orrs	r3, r3, ip, lsl #1
+   11818:	01c00fac 	biceq	r0, r0, ip, lsr #31
+   1181c:	e12fff1e 	bx	lr
+   11820:	e3320000 	teq	r2, #0
+   11824:	e200c102 	and	ip, r0, #-2147483648	; 0x80000000
+   11828:	01a00080 	lsleq	r0, r0, #1
+   1182c:	03100502 	tsteq	r0, #8388608	; 0x800000
+   11830:	02422001 	subeq	r2, r2, #1
+   11834:	0afffffb 	beq	11828 <bcm2835_pwm_set_data+0x108>
+   11838:	e180000c 	orr	r0, r0, ip
+   1183c:	e3330000 	teq	r3, #0
+   11840:	e201c102 	and	ip, r1, #-2147483648	; 0x80000000
+   11844:	01a01081 	lsleq	r1, r1, #1
+   11848:	03110502 	tsteq	r1, #8388608	; 0x800000
+   1184c:	02433001 	subeq	r3, r3, #1
+   11850:	0afffffb 	beq	11844 <bcm2835_pwm_set_data+0x124>
+   11854:	e181100c 	orr	r1, r1, ip
+   11858:	eaffffc0 	b	11760 <bcm2835_pwm_set_data+0x40>
+   1185c:	e00c3ba1 	and	r3, ip, r1, lsr #23
+   11860:	e132000c 	teq	r2, ip
+   11864:	1133000c 	teqne	r3, ip
+   11868:	0a000005 	beq	11884 <bcm2835_pwm_set_data+0x164>
+   1186c:	e3d0c102 	bics	ip, r0, #-2147483648	; 0x80000000
+   11870:	13d1c102 	bicsne	ip, r1, #-2147483648	; 0x80000000
+   11874:	1affffe9 	bne	11820 <bcm2835_pwm_set_data+0x100>
+   11878:	e0200001 	eor	r0, r0, r1
+   1187c:	e2000102 	and	r0, r0, #-2147483648	; 0x80000000
+   11880:	e12fff1e 	bx	lr
+   11884:	e3300000 	teq	r0, #0
+   11888:	13300102 	teqne	r0, #-2147483648	; 0x80000000
+   1188c:	01a00001 	moveq	r0, r1
+   11890:	13310000 	teqne	r1, #0
+   11894:	13310102 	teqne	r1, #-2147483648	; 0x80000000
+   11898:	0a00000d 	beq	118d4 <bcm2835_pwm_set_data+0x1b4>
+   1189c:	e132000c 	teq	r2, ip
+   118a0:	1a000001 	bne	118ac <bcm2835_pwm_set_data+0x18c>
+   118a4:	e1b02480 	lsls	r2, r0, #9
+   118a8:	1a000009 	bne	118d4 <bcm2835_pwm_set_data+0x1b4>
+   118ac:	e133000c 	teq	r3, ip
+   118b0:	1a000002 	bne	118c0 <bcm2835_pwm_set_data+0x1a0>
+   118b4:	e1b03481 	lsls	r3, r1, #9
+   118b8:	11a00001 	movne	r0, r1
+   118bc:	1a000004 	bne	118d4 <bcm2835_pwm_set_data+0x1b4>
+   118c0:	e0200001 	eor	r0, r0, r1
+   118c4:	e2000102 	and	r0, r0, #-2147483648	; 0x80000000
+   118c8:	e380047f 	orr	r0, r0, #2130706432	; 0x7f000000
+   118cc:	e3800502 	orr	r0, r0, #8388608	; 0x800000
+   118d0:	e12fff1e 	bx	lr
+   118d4:	e380047f 	orr	r0, r0, #2130706432	; 0x7f000000
+   118d8:	e3800503 	orr	r0, r0, #12582912	; 0xc00000
+   118dc:	e12fff1e 	bx	lr
+
+000118e0 <__udivsi3>:
+   118e0:	e2512001 	subs	r2, r1, #1
+   118e4:	012fff1e 	bxeq	lr
+   118e8:	3a000036 	bcc	119c8 <__udivsi3+0xe8>
+   118ec:	e1500001 	cmp	r0, r1
+   118f0:	9a000022 	bls	11980 <__udivsi3+0xa0>
+   118f4:	e1110002 	tst	r1, r2
+   118f8:	0a000023 	beq	1198c <__udivsi3+0xac>
+   118fc:	e311020e 	tst	r1, #-536870912	; 0xe0000000
+   11900:	01a01181 	lsleq	r1, r1, #3
+   11904:	03a03008 	moveq	r3, #8
+   11908:	13a03001 	movne	r3, #1
+   1190c:	e3510201 	cmp	r1, #268435456	; 0x10000000
+   11910:	31510000 	cmpcc	r1, r0
+   11914:	31a01201 	lslcc	r1, r1, #4
+   11918:	31a03203 	lslcc	r3, r3, #4
+   1191c:	3afffffa 	bcc	1190c <__udivsi3+0x2c>
+   11920:	e3510102 	cmp	r1, #-2147483648	; 0x80000000
+   11924:	31510000 	cmpcc	r1, r0
+   11928:	31a01081 	lslcc	r1, r1, #1
+   1192c:	31a03083 	lslcc	r3, r3, #1
+   11930:	3afffffa 	bcc	11920 <__udivsi3+0x40>
+   11934:	e3a02000 	mov	r2, #0
+   11938:	e1500001 	cmp	r0, r1
+   1193c:	20400001 	subcs	r0, r0, r1
+   11940:	21822003 	orrcs	r2, r2, r3
+   11944:	e15000a1 	cmp	r0, r1, lsr #1
+   11948:	204000a1 	subcs	r0, r0, r1, lsr #1
+   1194c:	218220a3 	orrcs	r2, r2, r3, lsr #1
+   11950:	e1500121 	cmp	r0, r1, lsr #2
+   11954:	20400121 	subcs	r0, r0, r1, lsr #2
+   11958:	21822123 	orrcs	r2, r2, r3, lsr #2
+   1195c:	e15001a1 	cmp	r0, r1, lsr #3
+   11960:	204001a1 	subcs	r0, r0, r1, lsr #3
+   11964:	218221a3 	orrcs	r2, r2, r3, lsr #3
+   11968:	e3500000 	cmp	r0, #0
+   1196c:	11b03223 	lsrsne	r3, r3, #4
+   11970:	11a01221 	lsrne	r1, r1, #4
+   11974:	1affffef 	bne	11938 <__udivsi3+0x58>
+   11978:	e1a00002 	mov	r0, r2
+   1197c:	e12fff1e 	bx	lr
+   11980:	03a00001 	moveq	r0, #1
+   11984:	13a00000 	movne	r0, #0
+   11988:	e12fff1e 	bx	lr
+   1198c:	e3510801 	cmp	r1, #65536	; 0x10000
+   11990:	21a01821 	lsrcs	r1, r1, #16
+   11994:	23a02010 	movcs	r2, #16
+   11998:	33a02000 	movcc	r2, #0
+   1199c:	e3510c01 	cmp	r1, #256	; 0x100
+   119a0:	21a01421 	lsrcs	r1, r1, #8
+   119a4:	22822008 	addcs	r2, r2, #8
+   119a8:	e3510010 	cmp	r1, #16
+   119ac:	21a01221 	lsrcs	r1, r1, #4
+   119b0:	22822004 	addcs	r2, r2, #4
+   119b4:	e3510004 	cmp	r1, #4
+   119b8:	82822003 	addhi	r2, r2, #3
+   119bc:	908220a1 	addls	r2, r2, r1, lsr #1
+   119c0:	e1a00230 	lsr	r0, r0, r2
+   119c4:	e12fff1e 	bx	lr
+   119c8:	e3500000 	cmp	r0, #0
+   119cc:	13e00000 	mvnne	r0, #0
+   119d0:	ea000007 	b	119f4 <__aeabi_idiv0>
+
+000119d4 <__aeabi_uidivmod>:
+   119d4:	e3510000 	cmp	r1, #0
+   119d8:	0afffffa 	beq	119c8 <__udivsi3+0xe8>
+   119dc:	e92d4003 	push	{r0, r1, lr}
+   119e0:	ebffffbe 	bl	118e0 <__udivsi3>
+   119e4:	e8bd4006 	pop	{r1, r2, lr}
+   119e8:	e0030092 	mul	r3, r2, r0
+   119ec:	e0411003 	sub	r1, r1, r3
+   119f0:	e12fff1e 	bx	lr
+
+000119f4 <__aeabi_idiv0>:
+   119f4:	e12fff1e 	bx	lr
+
+000119f8 <__aeabi_frsub>:
+   119f8:	e2200102 	eor	r0, r0, #-2147483648	; 0x80000000
+   119fc:	ea000000 	b	11a04 <__addsf3>
+
+00011a00 <__aeabi_fsub>:
+   11a00:	e2211102 	eor	r1, r1, #-2147483648	; 0x80000000
+
+00011a04 <__addsf3>:
+   11a04:	e1b02080 	lsls	r2, r0, #1
+   11a08:	11b03081 	lslsne	r3, r1, #1
+   11a0c:	11320003 	teqne	r2, r3
+   11a10:	11f0cc42 	mvnsne	ip, r2, asr #24
+   11a14:	11f0cc43 	mvnsne	ip, r3, asr #24
+   11a18:	0a000047 	beq	11b3c <__addsf3+0x138>
+   11a1c:	e1a02c22 	lsr	r2, r2, #24
+   11a20:	e0723c23 	rsbs	r3, r2, r3, lsr #24
+   11a24:	c0822003 	addgt	r2, r2, r3
+   11a28:	c0201001 	eorgt	r1, r0, r1
+   11a2c:	c0210000 	eorgt	r0, r1, r0
+   11a30:	c0201001 	eorgt	r1, r0, r1
+   11a34:	b2633000 	rsblt	r3, r3, #0
+   11a38:	e3530019 	cmp	r3, #25
+   11a3c:	812fff1e 	bxhi	lr
+   11a40:	e3100102 	tst	r0, #-2147483648	; 0x80000000
+   11a44:	e3800502 	orr	r0, r0, #8388608	; 0x800000
+   11a48:	e3c004ff 	bic	r0, r0, #-16777216	; 0xff000000
+   11a4c:	12600000 	rsbne	r0, r0, #0
+   11a50:	e3110102 	tst	r1, #-2147483648	; 0x80000000
+   11a54:	e3811502 	orr	r1, r1, #8388608	; 0x800000
+   11a58:	e3c114ff 	bic	r1, r1, #-16777216	; 0xff000000
+   11a5c:	12611000 	rsbne	r1, r1, #0
+   11a60:	e1320003 	teq	r2, r3
+   11a64:	0a00002e 	beq	11b24 <__addsf3+0x120>
+   11a68:	e2422001 	sub	r2, r2, #1
+   11a6c:	e0900351 	adds	r0, r0, r1, asr r3
+   11a70:	e2633020 	rsb	r3, r3, #32
+   11a74:	e1a01311 	lsl	r1, r1, r3
+   11a78:	e2003102 	and	r3, r0, #-2147483648	; 0x80000000
+   11a7c:	5a000001 	bpl	11a88 <__addsf3+0x84>
+   11a80:	e2711000 	rsbs	r1, r1, #0
+   11a84:	e2e00000 	rsc	r0, r0, #0
+   11a88:	e3500502 	cmp	r0, #8388608	; 0x800000
+   11a8c:	3a00000b 	bcc	11ac0 <__addsf3+0xbc>
+   11a90:	e3500401 	cmp	r0, #16777216	; 0x1000000
+   11a94:	3a000004 	bcc	11aac <__addsf3+0xa8>
+   11a98:	e1b000a0 	lsrs	r0, r0, #1
+   11a9c:	e1a01061 	rrx	r1, r1
+   11aa0:	e2822001 	add	r2, r2, #1
+   11aa4:	e35200fe 	cmp	r2, #254	; 0xfe
+   11aa8:	2a000038 	bcs	11b90 <__addsf3+0x18c>
+   11aac:	e3510102 	cmp	r1, #-2147483648	; 0x80000000
+   11ab0:	e0a00b82 	adc	r0, r0, r2, lsl #23
+   11ab4:	03c00001 	biceq	r0, r0, #1
+   11ab8:	e1800003 	orr	r0, r0, r3
+   11abc:	e12fff1e 	bx	lr
+   11ac0:	e1b01081 	lsls	r1, r1, #1
+   11ac4:	e0a00000 	adc	r0, r0, r0
+   11ac8:	e2522001 	subs	r2, r2, #1
+   11acc:	23500502 	cmpcs	r0, #8388608	; 0x800000
+   11ad0:	2afffff5 	bcs	11aac <__addsf3+0xa8>
+   11ad4:	e1b0c620 	lsrs	ip, r0, #12
+   11ad8:	01a00600 	lsleq	r0, r0, #12
+   11adc:	0242200c 	subeq	r2, r2, #12
+   11ae0:	e31008ff 	tst	r0, #16711680	; 0xff0000
+   11ae4:	01a00400 	lsleq	r0, r0, #8
+   11ae8:	02422008 	subeq	r2, r2, #8
+   11aec:	e310060f 	tst	r0, #15728640	; 0xf00000
+   11af0:	01a00200 	lsleq	r0, r0, #4
+   11af4:	02422004 	subeq	r2, r2, #4
+   11af8:	e3100503 	tst	r0, #12582912	; 0xc00000
+   11afc:	01a00100 	lsleq	r0, r0, #2
+   11b00:	02422002 	subeq	r2, r2, #2
+   11b04:	e3500502 	cmp	r0, #8388608	; 0x800000
+   11b08:	31a00080 	lslcc	r0, r0, #1
+   11b0c:	e2d22000 	sbcs	r2, r2, #0
+   11b10:	a0800b82 	addge	r0, r0, r2, lsl #23
+   11b14:	b2622000 	rsblt	r2, r2, #0
+   11b18:	a1800003 	orrge	r0, r0, r3
+   11b1c:	b1830230 	orrlt	r0, r3, r0, lsr r2
+   11b20:	e12fff1e 	bx	lr
+   11b24:	e3320000 	teq	r2, #0
+   11b28:	e2211502 	eor	r1, r1, #8388608	; 0x800000
+   11b2c:	02200502 	eoreq	r0, r0, #8388608	; 0x800000
+   11b30:	02822001 	addeq	r2, r2, #1
+   11b34:	12433001 	subne	r3, r3, #1
+   11b38:	eaffffca 	b	11a68 <__addsf3+0x64>
+   11b3c:	e1a03081 	lsl	r3, r1, #1
+   11b40:	e1f0cc42 	mvns	ip, r2, asr #24
+   11b44:	11f0cc43 	mvnsne	ip, r3, asr #24
+   11b48:	0a000013 	beq	11b9c <__addsf3+0x198>
+   11b4c:	e1320003 	teq	r2, r3
+   11b50:	0a000002 	beq	11b60 <__addsf3+0x15c>
+   11b54:	e3320000 	teq	r2, #0
+   11b58:	01a00001 	moveq	r0, r1
+   11b5c:	e12fff1e 	bx	lr
+   11b60:	e1300001 	teq	r0, r1
+   11b64:	13a00000 	movne	r0, #0
+   11b68:	112fff1e 	bxne	lr
+   11b6c:	e31204ff 	tst	r2, #-16777216	; 0xff000000
+   11b70:	1a000002 	bne	11b80 <__addsf3+0x17c>
+   11b74:	e1b00080 	lsls	r0, r0, #1
+   11b78:	23800102 	orrcs	r0, r0, #-2147483648	; 0x80000000
+   11b7c:	e12fff1e 	bx	lr
+   11b80:	e2922402 	adds	r2, r2, #33554432	; 0x2000000
+   11b84:	32800502 	addcc	r0, r0, #8388608	; 0x800000
+   11b88:	312fff1e 	bxcc	lr
+   11b8c:	e2003102 	and	r3, r0, #-2147483648	; 0x80000000
+   11b90:	e383047f 	orr	r0, r3, #2130706432	; 0x7f000000
+   11b94:	e3800502 	orr	r0, r0, #8388608	; 0x800000
+   11b98:	e12fff1e 	bx	lr
+   11b9c:	e1f02c42 	mvns	r2, r2, asr #24
+   11ba0:	11a00001 	movne	r0, r1
+   11ba4:	01f03c43 	mvnseq	r3, r3, asr #24
+   11ba8:	11a01000 	movne	r1, r0
+   11bac:	e1b02480 	lsls	r2, r0, #9
+   11bb0:	01b03481 	lslseq	r3, r1, #9
+   11bb4:	01300001 	teqeq	r0, r1
+   11bb8:	13800501 	orrne	r0, r0, #4194304	; 0x400000
+   11bbc:	e12fff1e 	bx	lr
+
+00011bc0 <__aeabi_ui2f>:
+   11bc0:	e3a03000 	mov	r3, #0
+   11bc4:	ea000001 	b	11bd0 <__aeabi_i2f+0x8>
+
+00011bc8 <__aeabi_i2f>:
+   11bc8:	e2103102 	ands	r3, r0, #-2147483648	; 0x80000000
+   11bcc:	42600000 	rsbmi	r0, r0, #0
+   11bd0:	e1b0c000 	movs	ip, r0
+   11bd4:	012fff1e 	bxeq	lr
+   11bd8:	e383344b 	orr	r3, r3, #1258291200	; 0x4b000000
+   11bdc:	e1a01000 	mov	r1, r0
+   11be0:	e3a00000 	mov	r0, #0
+   11be4:	ea00000f 	b	11c28 <__aeabi_l2f+0x30>
+
+00011be8 <__aeabi_ul2f>:
+   11be8:	e1902001 	orrs	r2, r0, r1
+   11bec:	012fff1e 	bxeq	lr
+   11bf0:	e3a03000 	mov	r3, #0
+   11bf4:	ea000005 	b	11c10 <__aeabi_l2f+0x18>
+
+00011bf8 <__aeabi_l2f>:
+   11bf8:	e1902001 	orrs	r2, r0, r1
+   11bfc:	012fff1e 	bxeq	lr
+   11c00:	e2113102 	ands	r3, r1, #-2147483648	; 0x80000000
+   11c04:	5a000001 	bpl	11c10 <__aeabi_l2f+0x18>
+   11c08:	e2700000 	rsbs	r0, r0, #0
+   11c0c:	e2e11000 	rsc	r1, r1, #0
+   11c10:	e1b0c001 	movs	ip, r1
+   11c14:	01a0c000 	moveq	ip, r0
+   11c18:	01a01000 	moveq	r1, r0
+   11c1c:	03a00000 	moveq	r0, #0
+   11c20:	e383345b 	orr	r3, r3, #1526726656	; 0x5b000000
+   11c24:	02433201 	subeq	r3, r3, #268435456	; 0x10000000
+   11c28:	e2433502 	sub	r3, r3, #8388608	; 0x800000
+   11c2c:	e3a02017 	mov	r2, #23
+   11c30:	e35c0801 	cmp	ip, #65536	; 0x10000
+   11c34:	21a0c82c 	lsrcs	ip, ip, #16
+   11c38:	22422010 	subcs	r2, r2, #16
+   11c3c:	e35c0c01 	cmp	ip, #256	; 0x100
+   11c40:	21a0c42c 	lsrcs	ip, ip, #8
+   11c44:	22422008 	subcs	r2, r2, #8
+   11c48:	e35c0010 	cmp	ip, #16
+   11c4c:	21a0c22c 	lsrcs	ip, ip, #4
+   11c50:	22422004 	subcs	r2, r2, #4
+   11c54:	e35c0004 	cmp	ip, #4
+   11c58:	22422002 	subcs	r2, r2, #2
+   11c5c:	304220ac 	subcc	r2, r2, ip, lsr #1
+   11c60:	e05221ac 	subs	r2, r2, ip, lsr #3
+   11c64:	e0433b82 	sub	r3, r3, r2, lsl #23
+   11c68:	ba000006 	blt	11c88 <__aeabi_l2f+0x90>
+   11c6c:	e0833211 	add	r3, r3, r1, lsl r2
+   11c70:	e1a0c210 	lsl	ip, r0, r2
+   11c74:	e2622020 	rsb	r2, r2, #32
+   11c78:	e35c0102 	cmp	ip, #-2147483648	; 0x80000000
+   11c7c:	e0a30230 	adc	r0, r3, r0, lsr r2
+   11c80:	03c00001 	biceq	r0, r0, #1
+   11c84:	e12fff1e 	bx	lr
+   11c88:	e2822020 	add	r2, r2, #32
+   11c8c:	e1a0c211 	lsl	ip, r1, r2
+   11c90:	e2622020 	rsb	r2, r2, #32
+   11c94:	e190008c 	orrs	r0, r0, ip, lsl #1
+   11c98:	e0a30231 	adc	r0, r3, r1, lsr r2
+   11c9c:	01c00fac 	biceq	r0, r0, ip, lsr #31
+   11ca0:	e12fff1e 	bx	lr
+
+00011ca4 <__aeabi_fmul>:
+   11ca4:	e3a0c0ff 	mov	ip, #255	; 0xff
+   11ca8:	e01c2ba0 	ands	r2, ip, r0, lsr #23
+   11cac:	101c3ba1 	andsne	r3, ip, r1, lsr #23
+   11cb0:	1132000c 	teqne	r2, ip
+   11cb4:	1133000c 	teqne	r3, ip
+   11cb8:	0a00003e 	beq	11db8 <__aeabi_fmul+0x114>
+   11cbc:	e0822003 	add	r2, r2, r3
+   11cc0:	e020c001 	eor	ip, r0, r1
+   11cc4:	e1b00480 	lsls	r0, r0, #9
+   11cc8:	11b01481 	lslsne	r1, r1, #9
+   11ccc:	0a000010 	beq	11d14 <__aeabi_fmul+0x70>
+   11cd0:	e3a03302 	mov	r3, #134217728	; 0x8000000
+   11cd4:	e18302a0 	orr	r0, r3, r0, lsr #5
+   11cd8:	e18312a1 	orr	r1, r3, r1, lsr #5
+   11cdc:	e0813190 	umull	r3, r1, r0, r1
+   11ce0:	e20c0102 	and	r0, ip, #-2147483648	; 0x80000000
+   11ce4:	e3510502 	cmp	r1, #8388608	; 0x800000
+   11ce8:	31a01081 	lslcc	r1, r1, #1
+   11cec:	31811fa3 	orrcc	r1, r1, r3, lsr #31
+   11cf0:	31a03083 	lslcc	r3, r3, #1
+   11cf4:	e1800001 	orr	r0, r0, r1
+   11cf8:	e2c2207f 	sbc	r2, r2, #127	; 0x7f
+   11cfc:	e35200fd 	cmp	r2, #253	; 0xfd
+   11d00:	8a00000f 	bhi	11d44 <__aeabi_fmul+0xa0>
+   11d04:	e3530102 	cmp	r3, #-2147483648	; 0x80000000
+   11d08:	e0a00b82 	adc	r0, r0, r2, lsl #23
+   11d0c:	03c00001 	biceq	r0, r0, #1
+   11d10:	e12fff1e 	bx	lr
+   11d14:	e3300000 	teq	r0, #0
+   11d18:	e20cc102 	and	ip, ip, #-2147483648	; 0x80000000
+   11d1c:	01a01481 	lsleq	r1, r1, #9
+   11d20:	e18c04a0 	orr	r0, ip, r0, lsr #9
+   11d24:	e18004a1 	orr	r0, r0, r1, lsr #9
+   11d28:	e252207f 	subs	r2, r2, #127	; 0x7f
+   11d2c:	c27230ff 	rsbsgt	r3, r2, #255	; 0xff
+   11d30:	c1800b82 	orrgt	r0, r0, r2, lsl #23
+   11d34:	c12fff1e 	bxgt	lr
+   11d38:	e3800502 	orr	r0, r0, #8388608	; 0x800000
+   11d3c:	e3a03000 	mov	r3, #0
+   11d40:	e2522001 	subs	r2, r2, #1
+   11d44:	ca000035 	bgt	11e20 <__aeabi_fmul+0x17c>
+   11d48:	e3720019 	cmn	r2, #25
+   11d4c:	d2000102 	andle	r0, r0, #-2147483648	; 0x80000000
+   11d50:	d12fff1e 	bxle	lr
+   11d54:	e2622000 	rsb	r2, r2, #0
+   11d58:	e1b01080 	lsls	r1, r0, #1
+   11d5c:	e1a01231 	lsr	r1, r1, r2
+   11d60:	e2622020 	rsb	r2, r2, #32
+   11d64:	e1a0c210 	lsl	ip, r0, r2
+   11d68:	e1b00061 	rrxs	r0, r1
+   11d6c:	e2a00000 	adc	r0, r0, #0
+   11d70:	e193308c 	orrs	r3, r3, ip, lsl #1
+   11d74:	01c00fac 	biceq	r0, r0, ip, lsr #31
+   11d78:	e12fff1e 	bx	lr
+   11d7c:	e3320000 	teq	r2, #0
+   11d80:	e200c102 	and	ip, r0, #-2147483648	; 0x80000000
+   11d84:	01a00080 	lsleq	r0, r0, #1
+   11d88:	03100502 	tsteq	r0, #8388608	; 0x800000
+   11d8c:	02422001 	subeq	r2, r2, #1
+   11d90:	0afffffb 	beq	11d84 <__aeabi_fmul+0xe0>
+   11d94:	e180000c 	orr	r0, r0, ip
+   11d98:	e3330000 	teq	r3, #0
+   11d9c:	e201c102 	and	ip, r1, #-2147483648	; 0x80000000
+   11da0:	01a01081 	lsleq	r1, r1, #1
+   11da4:	03110502 	tsteq	r1, #8388608	; 0x800000
+   11da8:	02433001 	subeq	r3, r3, #1
+   11dac:	0afffffb 	beq	11da0 <__aeabi_fmul+0xfc>
+   11db0:	e181100c 	orr	r1, r1, ip
+   11db4:	eaffffc0 	b	11cbc <__aeabi_fmul+0x18>
+   11db8:	e00c3ba1 	and	r3, ip, r1, lsr #23
+   11dbc:	e132000c 	teq	r2, ip
+   11dc0:	1133000c 	teqne	r3, ip
+   11dc4:	0a000005 	beq	11de0 <__aeabi_fmul+0x13c>
+   11dc8:	e3d0c102 	bics	ip, r0, #-2147483648	; 0x80000000
+   11dcc:	13d1c102 	bicsne	ip, r1, #-2147483648	; 0x80000000
+   11dd0:	1affffe9 	bne	11d7c <__aeabi_fmul+0xd8>
+   11dd4:	e0200001 	eor	r0, r0, r1
+   11dd8:	e2000102 	and	r0, r0, #-2147483648	; 0x80000000
+   11ddc:	e12fff1e 	bx	lr
+   11de0:	e3300000 	teq	r0, #0
+   11de4:	13300102 	teqne	r0, #-2147483648	; 0x80000000
+   11de8:	01a00001 	moveq	r0, r1
+   11dec:	13310000 	teqne	r1, #0
+   11df0:	13310102 	teqne	r1, #-2147483648	; 0x80000000
+   11df4:	0a00000d 	beq	11e30 <__aeabi_fmul+0x18c>
+   11df8:	e132000c 	teq	r2, ip
+   11dfc:	1a000001 	bne	11e08 <__aeabi_fmul+0x164>
+   11e00:	e1b02480 	lsls	r2, r0, #9
+   11e04:	1a000009 	bne	11e30 <__aeabi_fmul+0x18c>
+   11e08:	e133000c 	teq	r3, ip
+   11e0c:	1a000002 	bne	11e1c <__aeabi_fmul+0x178>
+   11e10:	e1b03481 	lsls	r3, r1, #9
+   11e14:	11a00001 	movne	r0, r1
+   11e18:	1a000004 	bne	11e30 <__aeabi_fmul+0x18c>
+   11e1c:	e0200001 	eor	r0, r0, r1
+   11e20:	e2000102 	and	r0, r0, #-2147483648	; 0x80000000
+   11e24:	e380047f 	orr	r0, r0, #2130706432	; 0x7f000000
+   11e28:	e3800502 	orr	r0, r0, #8388608	; 0x800000
+   11e2c:	e12fff1e 	bx	lr
+   11e30:	e380047f 	orr	r0, r0, #2130706432	; 0x7f000000
+   11e34:	e3800503 	orr	r0, r0, #12582912	; 0xc00000
+   11e38:	e12fff1e 	bx	lr
+
+00011e3c <__aeabi_fdiv>:
+   11e3c:	e3a0c0ff 	mov	ip, #255	; 0xff
+   11e40:	e01c2ba0 	ands	r2, ip, r0, lsr #23
+   11e44:	101c3ba1 	andsne	r3, ip, r1, lsr #23
+   11e48:	1132000c 	teqne	r2, ip
+   11e4c:	1133000c 	teqne	r3, ip
+   11e50:	0a00003a 	beq	11f40 <__aeabi_fdiv+0x104>
+   11e54:	e0422003 	sub	r2, r2, r3
+   11e58:	e020c001 	eor	ip, r0, r1
+   11e5c:	e1b01481 	lsls	r1, r1, #9
+   11e60:	e1a00480 	lsl	r0, r0, #9
+   11e64:	0a00001c 	beq	11edc <__aeabi_fdiv+0xa0>
+   11e68:	e3a03201 	mov	r3, #268435456	; 0x10000000
+   11e6c:	e1831221 	orr	r1, r3, r1, lsr #4
+   11e70:	e1833220 	orr	r3, r3, r0, lsr #4
+   11e74:	e20c0102 	and	r0, ip, #-2147483648	; 0x80000000
+   11e78:	e1530001 	cmp	r3, r1
+   11e7c:	31a03083 	lslcc	r3, r3, #1
+   11e80:	e2a2207d 	adc	r2, r2, #125	; 0x7d
+   11e84:	e3a0c502 	mov	ip, #8388608	; 0x800000
+   11e88:	e1530001 	cmp	r3, r1
+   11e8c:	20433001 	subcs	r3, r3, r1
+   11e90:	2180000c 	orrcs	r0, r0, ip
+   11e94:	e15300a1 	cmp	r3, r1, lsr #1
+   11e98:	204330a1 	subcs	r3, r3, r1, lsr #1
+   11e9c:	218000ac 	orrcs	r0, r0, ip, lsr #1
+   11ea0:	e1530121 	cmp	r3, r1, lsr #2
+   11ea4:	20433121 	subcs	r3, r3, r1, lsr #2
+   11ea8:	2180012c 	orrcs	r0, r0, ip, lsr #2
+   11eac:	e15301a1 	cmp	r3, r1, lsr #3
+   11eb0:	204331a1 	subcs	r3, r3, r1, lsr #3
+   11eb4:	218001ac 	orrcs	r0, r0, ip, lsr #3
+   11eb8:	e1b03203 	lsls	r3, r3, #4
+   11ebc:	11b0c22c 	lsrsne	ip, ip, #4
+   11ec0:	1afffff0 	bne	11e88 <__aeabi_fdiv+0x4c>
+   11ec4:	e35200fd 	cmp	r2, #253	; 0xfd
+   11ec8:	8affff9d 	bhi	11d44 <__aeabi_fmul+0xa0>
+   11ecc:	e1530001 	cmp	r3, r1
+   11ed0:	e0a00b82 	adc	r0, r0, r2, lsl #23
+   11ed4:	03c00001 	biceq	r0, r0, #1
+   11ed8:	e12fff1e 	bx	lr
+   11edc:	e20cc102 	and	ip, ip, #-2147483648	; 0x80000000
+   11ee0:	e18c04a0 	orr	r0, ip, r0, lsr #9
+   11ee4:	e292207f 	adds	r2, r2, #127	; 0x7f
+   11ee8:	c27230ff 	rsbsgt	r3, r2, #255	; 0xff
+   11eec:	c1800b82 	orrgt	r0, r0, r2, lsl #23
+   11ef0:	c12fff1e 	bxgt	lr
+   11ef4:	e3800502 	orr	r0, r0, #8388608	; 0x800000
+   11ef8:	e3a03000 	mov	r3, #0
+   11efc:	e2522001 	subs	r2, r2, #1
+   11f00:	eaffff8f 	b	11d44 <__aeabi_fmul+0xa0>
+   11f04:	e3320000 	teq	r2, #0
+   11f08:	e200c102 	and	ip, r0, #-2147483648	; 0x80000000
+   11f0c:	01a00080 	lsleq	r0, r0, #1
+   11f10:	03100502 	tsteq	r0, #8388608	; 0x800000
+   11f14:	02422001 	subeq	r2, r2, #1
+   11f18:	0afffffb 	beq	11f0c <__aeabi_fdiv+0xd0>
+   11f1c:	e180000c 	orr	r0, r0, ip
+   11f20:	e3330000 	teq	r3, #0
+   11f24:	e201c102 	and	ip, r1, #-2147483648	; 0x80000000
+   11f28:	01a01081 	lsleq	r1, r1, #1
+   11f2c:	03110502 	tsteq	r1, #8388608	; 0x800000
+   11f30:	02433001 	subeq	r3, r3, #1
+   11f34:	0afffffb 	beq	11f28 <__aeabi_fdiv+0xec>
+   11f38:	e181100c 	orr	r1, r1, ip
+   11f3c:	eaffffc4 	b	11e54 <__aeabi_fdiv+0x18>
+   11f40:	e00c3ba1 	and	r3, ip, r1, lsr #23
+   11f44:	e132000c 	teq	r2, ip
+   11f48:	1a000005 	bne	11f64 <__aeabi_fdiv+0x128>
+   11f4c:	e1b02480 	lsls	r2, r0, #9
+   11f50:	1affffb6 	bne	11e30 <__aeabi_fmul+0x18c>
+   11f54:	e133000c 	teq	r3, ip
+   11f58:	1affffaf 	bne	11e1c <__aeabi_fmul+0x178>
+   11f5c:	e1a00001 	mov	r0, r1
+   11f60:	eaffffb2 	b	11e30 <__aeabi_fmul+0x18c>
+   11f64:	e133000c 	teq	r3, ip
+   11f68:	1a000003 	bne	11f7c <__aeabi_fdiv+0x140>
+   11f6c:	e1b03481 	lsls	r3, r1, #9
+   11f70:	0affff97 	beq	11dd4 <__aeabi_fmul+0x130>
+   11f74:	e1a00001 	mov	r0, r1
+   11f78:	eaffffac 	b	11e30 <__aeabi_fmul+0x18c>
+   11f7c:	e3d0c102 	bics	ip, r0, #-2147483648	; 0x80000000
+   11f80:	13d1c102 	bicsne	ip, r1, #-2147483648	; 0x80000000
+   11f84:	1affffde 	bne	11f04 <__aeabi_fdiv+0xc8>
+   11f88:	e3d02102 	bics	r2, r0, #-2147483648	; 0x80000000
+   11f8c:	1affffa2 	bne	11e1c <__aeabi_fmul+0x178>
+   11f90:	e3d13102 	bics	r3, r1, #-2147483648	; 0x80000000
+   11f94:	1affff8e 	bne	11dd4 <__aeabi_fmul+0x130>
+   11f98:	eaffffa4 	b	11e30 <__aeabi_fmul+0x18c>
+
+00011f9c <__aeabi_f2iz>:
+   11f9c:	e1a02080 	lsl	r2, r0, #1
+   11fa0:	e352047f 	cmp	r2, #2130706432	; 0x7f000000
+   11fa4:	3a000008 	bcc	11fcc <__aeabi_f2iz+0x30>
+   11fa8:	e3a0309e 	mov	r3, #158	; 0x9e
+   11fac:	e0532c22 	subs	r2, r3, r2, lsr #24
+   11fb0:	9a000007 	bls	11fd4 <__aeabi_f2iz+0x38>
+   11fb4:	e1a03400 	lsl	r3, r0, #8
+   11fb8:	e3833102 	orr	r3, r3, #-2147483648	; 0x80000000
+   11fbc:	e3100102 	tst	r0, #-2147483648	; 0x80000000
+   11fc0:	e1a00233 	lsr	r0, r3, r2
+   11fc4:	12600000 	rsbne	r0, r0, #0
+   11fc8:	e12fff1e 	bx	lr
+   11fcc:	e3a00000 	mov	r0, #0
+   11fd0:	e12fff1e 	bx	lr
+   11fd4:	e3720061 	cmn	r2, #97	; 0x61
+   11fd8:	1a000001 	bne	11fe4 <__aeabi_f2iz+0x48>
+   11fdc:	e1b02480 	lsls	r2, r0, #9
+   11fe0:	1a000002 	bne	11ff0 <__aeabi_f2iz+0x54>
+   11fe4:	e2100102 	ands	r0, r0, #-2147483648	; 0x80000000
+   11fe8:	03e00102 	mvneq	r0, #-2147483648	; 0x80000000
+   11fec:	e12fff1e 	bx	lr
+   11ff0:	e3a00000 	mov	r0, #0
+   11ff4:	e12fff1e 	bx	lr
+
+Disassembly of section .text.startup:
+
+00011ff8 <main>:
+    gpio_output(LED_PIN, pin_level);
+}
+
+void main(void)
+{
+    gpio_init(LED_PIN, GPIO_FUNCTION_OUTPUT);
+   11ff8:	e3a01001 	mov	r1, #1
+   11ffc:	e3a0002f 	mov	r0, #47	; 0x2f
+{
+   12000:	e92d4010 	push	{r4, lr}
+    gpio_init(LED_PIN, GPIO_FUNCTION_OUTPUT);
+   12004:	ebfff8c9 	bl	10330 <gpio_init>
+    gpio_output(LED_PIN, FALSE);
+   12008:	e3a01000 	mov	r1, #0
+   1200c:	e3a0002f 	mov	r0, #47	; 0x2f
+   12010:	ebfff8fe 	bl	10410 <gpio_output>
+
+    while(1);
+   12014:	eafffffe 	b	12014 <main+0x1c>

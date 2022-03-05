@@ -1,6 +1,8 @@
 #ifndef CMPE460_BCM2835_INT_H
 #define CMPE460_BCM2835_INT_H
 
+#include <fw.h>
+
 #define BCM2835_INTC_TOTAL_IRQ       64 + 8
 
 #define BCM2835_BASE_INTC           (0x2000B200)

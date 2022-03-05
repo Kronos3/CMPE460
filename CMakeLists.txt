@@ -8,6 +8,8 @@ set(CMAKE_C_STANDARD 99)
 
 set(PLATFORM "msp432p401r" CACHE STRING "Target board to build drivers and targets for")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 include_directories(${PROJECT_SOURCE_DIR})
 include(platform/${PLATFORM}/platform.cmake)
 

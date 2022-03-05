@@ -20,6 +20,8 @@ typedef enum {
     GPIO_P1_24 = 8,  ///< Version 2, Pin P1-24, CE0 when SPI0 in use
     GPIO_P1_26 = 7,  ///< Version 2, Pin P1-26, CE1 when SPI0 in use
 
+    GPIO_ACT_LED = 47,  //!< On board LED (green)
+
     // RPi Version 2, new plug P5
     GPIO_P5_03 = 28,  ///< Version 2, Pin P5-03
     GPIO_P5_04 = 29,  ///< Version 2, Pin P5-04

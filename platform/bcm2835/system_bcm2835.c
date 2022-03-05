@@ -20,7 +20,7 @@ typedef struct
 static bcm2835_InterruptHandler vector_table[BCM2835_INTC_TOTAL_IRQ] = {NULL};
 static U32 enabled_interrupts[3] = {0};
 
-static void irq_handler_range(U32 pending, const U32 base)
+static inline void irq_handler_range(U32 pending, const U32 base)
 {
     // Execute all pending interrupts
     while (pending)

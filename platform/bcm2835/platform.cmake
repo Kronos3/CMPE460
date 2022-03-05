@@ -1,3 +1,5 @@
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/usbboot)
+
 set(PLATFORM_PATH ${CMAKE_CURRENT_LIST_DIR})
 set(LINKER_SCRIPT ${PLATFORM_PATH}/linker.ld)
 
@@ -20,20 +22,21 @@ add_compile_definitions(
 )
 
 add_compile_options(
-#        --target=arm-linux-gnueabihf
-        -mcpu=arm1176jzf-s -mfpu=vfp
+        -mcpu=arm1176jzf-s
+        -mfpu=vfp
+        -O2
         -nostdlib -nostartfiles -ffreestanding
 #        -nobuiltininc  -nostdlibinc
 )
 
 add_link_options(
-        -Wl,-T,${LINKER_SCRIPT}
+        -T ${LINKER_SCRIPT}
 #        --target=arm-linux-gnueabihf
-        -mcpu=arm1176jzf-s -mfpu=vfp
-        -static
-        -nostartfiles -ffreestanding
-        -Wl,--gc-sections
-        --specs=nano.specs
+        -mcpu=arm1176jzf-s
+        -mfpu=vfp
+        -static -nostartfiles -ffreestanding
+#        -Wl,--gc-sections
+#        --specs=nano.specs
 )
 
 
@@ -48,6 +51,7 @@ function(build_elf NAME)
             ${PLATFORM_PATH}/startup.s
             ${PLATFORM_PATH}/system_bcm2835.c
     )
+    add_dependencies(${NAME} usbboot)
     target_link_libraries(${NAME}
             gcc     # gcc runtime library
             c       # libc (standard C library)
@@ -55,13 +59,13 @@ function(build_elf NAME)
             nosys   # don't automatically link libc
     )
 
-    set(SREC_FILE ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.srec)
-    set(IMG_FILE ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.img)
+    set(HEX_FILE ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.hex)
+    set(BIN_FILE ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.bin)
 
     add_custom_command(TARGET ${NAME} POST_BUILD
-            COMMAND ${CMAKE_OBJCOPY} --srec-forceS3 $<TARGET_FILE:${NAME}> -O srec ${SREC_FILE}
-            COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${NAME}> ${IMG_FILE}
-            COMMENT "Building ${SREC_FILE}\nBuilding ${IMG_FILE}")
+            COMMAND ${CMAKE_OBJCOPY} $<TARGET_FILE:${NAME}> -O ihex ${HEX_FILE}
+            COMMAND ${CMAKE_OBJCOPY} $<TARGET_FILE:${NAME}> -O binary ${BIN_FILE}
+            COMMENT "Building ${HEX_FILE}\nBuilding ${BIN_FILE}")
 
     target_link_options(${NAME} PRIVATE
             "-Wl,-Map,${CMAKE_CURRENT_BINARY_DIR}/${NAME}.map")

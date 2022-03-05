@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <fw.h>
+#include <instr.h>
 
 I32 nop_handler(const char* fmt, ...)
 {

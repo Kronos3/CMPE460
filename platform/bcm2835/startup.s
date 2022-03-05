@@ -79,16 +79,16 @@ _start:
     ;@ All the following instruction should be read as:
     ;@ Load the address at symbol into the program counter.
 
-    ldr    pc,reset_handler        ;@     Processor Reset handler         -- we will have to force this on the raspi!
+    ldr pc,reset_handler        ;@     Processor Reset handler         -- we will have to force this on the raspi!
     ;@ Because this is the first instruction executed, of cause it causes an immediate branch into reset!
 
     ldr pc,undefined_handler    ;@     Undefined instruction handler     -- processors that don't have thumb can emulate thumb!
-    ldr pc,swi_handler            ;@     Software interrupt / TRAP (SVC) -- system SVC handler for switching to kernel mode.
-    ldr pc,prefetch_handler        ;@     Prefetch/abort handler.
-    ldr pc,data_handler            ;@     Data abort handler/
-    ldr pc,unused_handler        ;@     -- Historical from 26-bit addressing ARMs -- was invalid address handler.
-    ldr pc,irq_handler            ;@     IRQ handler
-    ldr pc,fiq_handler            ;@     Fast interrupt handler.
+    ldr pc,swi_handler          ;@     Software interrupt / TRAP (SVC) -- system SVC handler for switching to kernel mode.
+    ldr pc,prefetch_handler     ;@     Prefetch/abort handler.
+    ldr pc,data_handler         ;@     Data abort handler/
+    ldr pc,unused_handler       ;@     -- Historical from 26-bit addressing ARMs -- was invalid address handler.
+    ldr pc,irq_handler          ;@     IRQ handler
+    ldr pc,fiq_handler          ;@     Fast interrupt handler.
 
     ;@ Here we create an exception address table! This means that reset/hang/irq can be absolute addresses
 reset_handler:      .word reset
@@ -99,6 +99,9 @@ data_handler:       .word data_abort
 unused_handler:     .word unused
 irq_handler:        .word Interrupt_IRQHandler
 fiq_handler:        .word Fast_IRQHandler
+
+    ;@ Make sure the table gets dumped before reset
+    .ltorg
 
 reset:
     ;@    In the reset handler, we need to copy our interrupt vector table to 0x0000, its currently at 0x8000
@@ -143,11 +146,12 @@ zero_loop:
     blt        zero_loop
 
     ;@ Disable interrupts
-    cpsid i
-
+    bl disable_irq
 
     ;@     mov    sp,#0x1000000
-    b main                                    ;@ We're ready?? Lets start main execution!
+    bl main                                    ;@ We're ready?? Lets start main execution!
+    b hang
+
     .section .text
 
 undefined_instruction:
@@ -163,5 +167,19 @@ unused:
     b unused
 
 hang:
+    wfe
     b hang
 
+.globl enable_irq
+enable_irq:
+    mrs r0, cpsr
+    bic r0, r0, #0x80
+    msr cpsr_c, r0
+    bx lr
+
+.globl disable_irq
+disable_irq:
+    mrs r0, cpsr
+    orr r0, r0, #0x80
+    msr cpsr_c, r0
+    bx lr

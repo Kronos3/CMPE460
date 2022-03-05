@@ -32,7 +32,7 @@ static int i2c_byte_wait_us = 0;
 //
 
 // safe read from peripheral
-U32 bcm2835_peri_read(const volatile U32* paddr)
+static inline U32 bcm2835_peri_read(const volatile U32* paddr)
 {
     // Make sure we don't return the _last_ read which might get lost
     // if subsequent code changes to a different peripheral
@@ -42,13 +42,13 @@ U32 bcm2835_peri_read(const volatile U32* paddr)
 }
 
 // read from peripheral without the read barrier
-U32 bcm2835_peri_read_nb(const volatile U32* paddr)
+static inline U32 bcm2835_peri_read_nb(const volatile U32* paddr)
 {
     return *paddr;
 }
 
 // safe write to peripheral
-void bcm2835_peri_write(volatile U32* paddr, U32 value)
+static inline void bcm2835_peri_write(volatile U32* paddr, U32 value)
 {
     // Make sure we don't rely on the first write, which may get
     // lost if the previous access was to a different peripheral.
@@ -63,7 +63,7 @@ void bcm2835_peri_write_nb(volatile U32* paddr, U32 value)
 }
 
 // Set/clear only the bits in value covered by the mask
-void bcm2835_peri_set_bits(volatile U32* paddr, U32 value, U32 mask)
+static inline void bcm2835_peri_set_bits(volatile U32* paddr, U32 value, U32 mask)
 {
     U32 v = bcm2835_peri_read(paddr);
     v = (v & ~mask) | (value & mask);
@@ -91,9 +91,10 @@ void bcm2835_peri_set_bits(volatile U32* paddr, U32 value, U32 mask)
 //
 // So the 3 bits for port X are:
 //      X / 10 + ((X % 10) * 3)
+COMPILE_ASSERT(&BCM2835_GPIO->FSEL[4] == (U32*)0x20200010, fsel_4_location);
 void bcm2835_gpio_fsel(U8 pin, U8 mode)
 {
-    FW_ASSERT(pin / 10 < (sizeof(BCM2835_GPIO->FSEL) / sizeof(BCM2835_GPIO->FSEL[0])), pin);
+    FW_ASSERT(pin / 10 < 6, pin);
 
     // Function selects are 10 pins per 32 bit word, 3 bits per pin
     volatile U32* paddr = &BCM2835_GPIO->FSEL[pin / 10];
@@ -105,12 +106,14 @@ void bcm2835_gpio_fsel(U8 pin, U8 mode)
 }
 
 // Set output pin
+COMPILE_ASSERT(&BCM2835_GPIO->SET[1] == (U32*)0x20200020, gpio_set_check);
 void bcm2835_gpio_set(U8 pin)
 {
     FW_ASSERT(pin < 64, pin);
     volatile U32* paddr = &BCM2835_GPIO->SET[pin / 32];
     U8 shift = pin % 32;
-    bcm2835_peri_write(paddr, 1 << shift);
+    U32 value = bcm2835_peri_read(paddr);
+    bcm2835_peri_write(paddr, value | (1 << shift));
 }
 
 // Clear output pin
@@ -119,7 +122,8 @@ void bcm2835_gpio_clr(U8 pin)
     FW_ASSERT(pin < 64, pin);
     volatile U32* paddr = &BCM2835_GPIO->CLR[pin / 32];
     U8 shift = pin % 32;
-    bcm2835_peri_write(paddr, 1 << shift);
+    U32 value = bcm2835_peri_read(paddr);
+    bcm2835_peri_write(paddr, value | (1 << shift));
 }
 
 // Read input pin
