@@ -35,7 +35,7 @@
 *****************************************************************************/
 
 #include <stdint.h>
-#include <fw.h>
+#include <instr.h>
 
 /* Entry point for the application. */
 extern int _mainCRTStartup();

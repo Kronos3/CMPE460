@@ -1,6 +1,10 @@
 #ifndef CMPE460_GBL_H
 #define CMPE460_GBL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef __gbl_LINKED__
 #error "You need to link 'gbl' to use this header"
 #endif
@@ -62,5 +66,9 @@ void gbl_reply_ret(GblReply* reply, GblStatus status, U32 n, ...);
  * @param status status of reply
  */
 void gbl_reply(const GblReply* reply, GblStatus status);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_GBL_H

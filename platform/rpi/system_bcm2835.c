@@ -1,5 +1,6 @@
 #include <fw.h>
 #include <bcm2835_int.h>
+#include <instr.h>
 
 typedef struct
 {
@@ -43,7 +44,7 @@ static inline void irq_handler_range(U32 pending, const U32 base)
 }
 
 void __attribute__((interrupt("IRQ")))
-Interrupt_IRQHandler(void)
+interrupt_vector(void)
 {
     register U32 ul_masked_status = INTCREGS->IRQ_Basic;
 
@@ -66,15 +67,13 @@ Interrupt_IRQHandler(void)
     }
 }
 
-void __attribute__((interrupt("SWI")))
-Yield_IRQHandler(void)
-{
-}
-
+// The BCM2835 tim library will be using the fast interrupt for Arm Timer
+#ifndef __tim_LINKED__
 void __attribute__((interrupt("FIQ")))
-Fast_IRQHandler(void)
+fast_interrupt_vector(void)
 {
 }
+#endif
 
 void bcm2835_interrupt_register(bcm2835_Interrupt irq,
                                 bcm2835_InterruptHandler handler)
@@ -125,4 +124,88 @@ void bcm2835_interrupt_disable(bcm2835_Interrupt irq)
         INTCREGS->DisableBasic = mask;
         enabled_interrupts[2] &= ~mask;
     }
+}
+
+extern int __bss_start__;
+extern int __bss_end__;
+
+extern void _cstartup(void);
+
+void _cstartup(void)
+{
+    // Enables L1 cache and branch prediction
+    start_l1cache();
+
+    int* bss = &__bss_start__;
+    int* bss_end = &__bss_end__;
+
+    while (bss < bss_end)
+        *bss++ = 0;
+
+    main();
+
+    // Main has exited
+    // Trap the CPU
+    while (1)
+    {
+        WAIT_FOR_INTERRUPT();
+    }
+}
+
+/**
+    @brief The Reset vector interrupt handler
+    This can never be called, since an ARM core reset would also reset the
+    GPU and therefore cause the GPU to start running code again until
+    the ARM is handed control at the end of boot loading
+*/
+void __attribute__((interrupt("ABORT"))) reset_vector(void)
+{
+
+}
+
+/**
+    @brief The undefined instruction interrupt handler
+    If an undefined intstruction is encountered, the CPU will start
+    executing this function. Just trap here as a debug solution.
+*/
+void __attribute__((interrupt("UNDEF"))) undefined_instruction_vector(void)
+{
+    while (1)
+    {
+        /* Do Nothing! */
+    }
+}
+
+
+/**
+    @brief The supervisor call interrupt handler
+    The CPU will start executing this function. Just trap here as a debug
+    solution.
+*/
+void __attribute__((interrupt("SWI"))) software_interrupt_vector(void)
+{
+    while (1)
+    {
+        /* Do Nothing! */
+    }
+}
+
+
+/**
+    @brief The prefetch abort interrupt handler
+    The CPU will start executing this function. Just trap here as a debug
+    solution.
+*/
+void __attribute__((interrupt("ABORT"))) prefetch_abort_vector(void)
+{
+}
+
+/**
+    @brief The Data Abort interrupt handler
+    The CPU will start executing this function. Just trap here as a debug
+    solution.
+*/
+void __attribute__((interrupt("ABORT"))) data_abort_vector(void)
+{
+
 }

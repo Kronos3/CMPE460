@@ -1,6 +1,7 @@
 #include <drv/tim.h>
 #include <msp.h>
 #include <nvic.h>
+#include <instr.h>
 
 static struct Timer32
 {

@@ -1,6 +1,8 @@
 #ifndef CMPE460_MSP432_PWM_H
 #define CMPE460_MSP432_PWM_H
 
+#include <fw.h>
+
 typedef struct Msp432_PwmPin_prv PwmPin;
 
 typedef enum

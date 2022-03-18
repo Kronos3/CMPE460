@@ -1,18 +1,18 @@
-// bcm2835.c
+// rpi.c
 // C and C++ support for Broadcom BCM 2835 as used in Raspberry Pi
 // http://elinux.org/RPi_Low-level_peripherals
 // http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 //
 // Author: Mike McCauley
 // Copyright (C) 2011-2013 Mike McCauley
-// $Id: bcm2835.c,v 1.14 2013/12/06 22:24:52 mikem Exp mikem $
+// $Id: rpi.c,v 1.14 2013/12/06 22:24:52 mikem Exp mikem $
 
 
 #include <drv/bcm2835/bcm2835.h>
 
 // This define enables a little test program (by default a blinking output on pin RPI_GPIO_PIN_11)
 // You can do some safe, non-destructive testing on any platform with:
-// gcc bcm2835.c -D BCM2835_TEST
+// gcc rpi.c -D BCM2835_TEST
 // ./a.out
 //#define BCM2835_TEST
 
@@ -554,7 +554,7 @@ void bcm2835_i2c_setSlaveAddress(U8 addr)
 {
     // Set I2C Device Address
 #ifdef I2C_V1
-    volatile U32* paddr = ((U32*)BCM2835_BSC0_BASE) + BCM2835_BSC_A/4;
+    volatile U32* paddr = ((U32*)BCM2835_BSC0_BASE) + BCM2835_BSC_A / 4;
 #else
     volatile U32* paddr = ((U32*)BCM2835_BSC1_BASE) + BCM2835_BSC_A / 4;
 #endif
@@ -587,7 +587,7 @@ void bcm2835_i2c_set_baudrate(U32 baudrate)
     bcm2835_i2c_setClockDivider((U16) divider);
 }
 
-// Writes an number of bytes to I2C
+// Writes a number of bytes to I2C
 U8 bcm2835_i2c_write(const U8* buf, U32 len)
 {
 #ifdef I2C_V1

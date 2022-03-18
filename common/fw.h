@@ -10,6 +10,10 @@
 #ifndef CMPE460_FW_H
 #define CMPE460_FW_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef signed char I8;
 typedef unsigned char U8;
 typedef signed short I16;
@@ -107,6 +111,10 @@ __attribute__((noreturn)) void fw_assertion_failure(const char* file, U32 line, 
 #else
 #define offsetof(st_, f_) ((PXX)&(((st_ *)0)->f_))
 #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif //CMPE460_FW_H

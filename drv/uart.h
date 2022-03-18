@@ -1,17 +1,22 @@
 #ifndef CMPE460_UART_H
 #define CMPE460_UART_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 
 #ifndef __uart_LINKED__
-#error "You need to link 'uart' to use this header"
+//#error "You need to link 'uart' to use this header"
 #endif
 
-typedef enum {
-    UART_USB,
-    UART_BT,
-    UART_INVALID,
-} uart_t;
+#ifdef __BCM2835__
+#include <drv/rpi/uart.h>
+#error "uart is not supported on BCM2835 yet!"
+#elif defined(__MSP432P401R__)
+#include <drv/msp432p401r/uart.h>
+#endif
 
 /**
  * Initialize the UART to an operating state
@@ -64,5 +69,9 @@ char* uart_getline(uart_t id, char buf[], U32 len);
  * @return TRUE if data is available, FALSE otherwise
  */
 bool_t uart_peek(uart_t id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // CMPE460_UART_H

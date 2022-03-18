@@ -1,6 +1,10 @@
 #ifndef CMPE460_GPIO_H
 #define CMPE460_GPIO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 
 #ifndef __gpio_LINKED__
@@ -8,7 +12,7 @@
 #endif
 
 #ifdef __BCM2835__
-#include "bcm2835/gpio.h"
+#include "rpi/gpio.h"
 #elif defined(__MSP432P401R__)
 #include "msp432p401r/gpio.h"
 #endif
@@ -33,5 +37,9 @@ void gpio_options(GpioPin pin, gpio_options_t options);
  * @param output value to set pins to
  */
 void gpio_output(GpioPin pin, bool_t output);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_GPIO_H

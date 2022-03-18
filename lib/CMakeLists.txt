@@ -11,3 +11,8 @@ target_link_libraries(cam adc tim gbl gpio)
 
 gen_library(dc dc.c dc.h)
 target_link_libraries(dc pwm)
+
+gen_library(i2c_mux i2c_mux.c i2c_mux.h)
+target_link_libraries(i2c_mux i2c)
+
+add_subdirectory(ardu_cam)

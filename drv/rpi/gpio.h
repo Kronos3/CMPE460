@@ -1,6 +1,10 @@
 #ifndef CMPE460_RPI_ZERO_GPIO_H
 #define CMPE460_RPI_ZERO_GPIO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     GPIO_P1_03 = 2,  ///< Version 2, Pin P1-03
     GPIO_P1_05 = 3,  ///< Version 2, Pin P1-05
@@ -47,5 +51,9 @@ typedef enum
     GPIO_OPTIONS_PUD_DOWN,
     GPIO_OPTIONS_PUD_UP,
 } gpio_options_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_RPI_ZERO_GPIO_H

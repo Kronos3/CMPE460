@@ -24,8 +24,16 @@
 
 //// --------------------- I2C0  ---------------------------------------------
 
-void i2c0_init(U32 listener_address)
+void i2c_init(U32 baud_rate)
 {
+    static bool_t i2c_initialized = FALSE;
+    if (i2c_initialized)
+    {
+        return;
+    }
+
+    i2c_initialized = TRUE;
+
     // make sure module is disabled (in reset mode)
     // EUSCI_B0->CTLW0
     EUSCI_B0->CTLW0 = UCSWRST;
@@ -88,18 +96,21 @@ void i2c0_init(U32 listener_address)
     //EUSCI_B0->CTLW0
 
     // set clock: 400 KHz
-    EUSCI_B0->BRW = SystemCoreClock / (400000);
-
-    // initialize RECEIVER address
-    // EUSCI_B0->I2CSA
-    EUSCI_B0->I2CSA = listener_address;
+    EUSCI_B0->BRW = SystemCoreClock / (baud_rate);
 
     // release reset
     // EUSCI_B0->CTLW0
     EUSCI_B0->CTLW0 &= ~UCSWRST;
 }
 
-static void i2c0_putc(U8 ch)
+void i2c_set_address(U8 slave_address)
+{
+    // initialize RECEIVER address
+    // EUSCI_B0->I2CSA
+    EUSCI_B0->I2CSA = slave_address;
+}
+
+static void i2c_putc(U8 ch)
 {
     // write data to TXBUF
     // EUSCI_B0->TXBUF
@@ -110,8 +121,10 @@ static void i2c0_putc(U8 ch)
     while (!(EUSCI_B0->IFG & UCTXIFG0));
 }
 
-void i2c0_write(const U8* data, U32 len)
+void i2c_write(const U8* data, U32 len)
 {
+    FW_ASSERT(data);
+
     // enable i2c module, (remove from RESET)
     // EUSCI_B0->CTLW0
     EUSCI_B0->CTLW0 &= ~UCSWRST;
@@ -131,7 +144,7 @@ void i2c0_write(const U8* data, U32 len)
     // write data byte by byte to i2c, use putchar
     for (U32 i = 0; i < len; i++)
     {
-        i2c0_putc(data[i]);
+        i2c_putc(data[i]);
     }
 
     // force stop

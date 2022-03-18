@@ -1,6 +1,7 @@
 #include <drv/msp432p401r/switch.h>
 #include <msp432.h>
 #include <nvic.h>
+#include <instr.h>
 
 #define USR_BTN (P1)
 

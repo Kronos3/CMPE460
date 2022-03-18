@@ -1,8 +1,12 @@
 #ifndef CMPE460_BCM2835_TIM_H
 #define CMPE460_BCM2835_TIM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef BCM2835_TIMER_BASE_FREQ
-#define BCM2835_TIMER_BASE_FREQ (500000)
+#define BCM2835_TIMER_BASE_FREQ (1000)
 #endif // BCM2835_TIMER_BASE_FREQ
 
 // The BCM2835 board has only one timer
@@ -20,5 +24,9 @@ typedef enum
     TIM_5,
     TIM_N,
 } tim_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_BCM2835_TIM_H

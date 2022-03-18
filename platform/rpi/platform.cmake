@@ -22,9 +22,9 @@ add_compile_definitions(
 )
 
 add_compile_options(
-        -mcpu=arm1176jzf-s
+        -march=armv6zk -mtune=arm1176jzf-s
         -mfpu=vfp
-        -O2
+        -O1
         -nostdlib -nostartfiles -ffreestanding
 #        -nobuiltininc  -nostdlibinc
 )
@@ -32,7 +32,7 @@ add_compile_options(
 add_link_options(
         -T ${LINKER_SCRIPT}
 #        --target=arm-linux-gnueabihf
-        -mcpu=arm1176jzf-s
+        -march=armv6zk -mtune=arm1176jzf-s
         -mfpu=vfp
         -static -nostartfiles -ffreestanding
 #        -Wl,--gc-sections

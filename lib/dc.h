@@ -1,6 +1,10 @@
 #ifndef CMPE460_DC_H
 #define CMPE460_DC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 #include <drv/pwm.h>
 
@@ -43,5 +47,9 @@ void dc_start(void);
  * @param speed speed from -1 to 1 (negative will run backwards)
  */
 void dc_set(dc_t dc, F64 speed);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_DC_H

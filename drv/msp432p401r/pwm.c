@@ -231,9 +231,8 @@ void msp432_pwm_optimal_prescaler(
         {
             F64 prescaled_clock = (F64)SystemCoreClock / (psc_1_iter * psc_2_iter);
             F64 count_f = prescaled_clock / frequency;
-            U16 count = (U16)count_f;
 
-            if (count < UINT16_MAX)
+            if (count_f < UINT16_MAX)
             {
                 // We found our prescalers
                 *psc_1 = (psc_1_iter - 1);

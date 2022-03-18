@@ -1,10 +1,10 @@
-// bcm2835.h
+// rpi.h
 //
 // C and C++ support for Broadcom BCM 2835 as used in Raspberry Pi
 //
 // Author: Mike McCauley
 // Copyright (C) 2011-2013 Mike McCauley
-// $Id: bcm2835.h,v 1.13 2013/12/06 22:24:52 mikem Exp mikem $
+// $Id: rpi.h,v 1.13 2013/12/06 22:24:52 mikem Exp mikem $
 //
 /// \mainpage C library for Broadcom BCM 2835 as used in Raspberry Pi
 ///
@@ -22,8 +22,8 @@
 /// BCM 2835).
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/bcm2835/bcm2835-1.36.tar.gz
-/// You can find the latest version at http://www.airspayce.com/mikem/bcm2835
+/// from http://www.airspayce.com/mikem/rpi/rpi-1.36.tar.gz
+/// You can find the latest version at http://www.airspayce.com/mikem/rpi
 ///
 /// Several example programs are provided.
 ///
@@ -31,7 +31,7 @@
 /// http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 /// and http://www.scribd.com/doc/101830961/GPIO-Pads-Control2
 ///
-/// You can also find online help and discussion at http://groups.google.com/group/bcm2835
+/// You can also find online help and discussion at http://groups.google.com/group/rpi
 /// Please use that group for all questions and discussions on this topic. 
 /// Do not contact the author directly, unless it is to discuss commercial licensing.
 ///
@@ -52,9 +52,9 @@
 /// installed in the usual places by make install
 ///
 /// \code
-/// # download the latest version of the library, say bcm2835-1.xx.tar.gz, then:
-/// tar zxvf bcm2835-1.xx.tar.gz
-/// cd bcm2835-1.xx
+/// # download the latest version of the library, say rpi-1.xx.tar.gz, then:
+/// tar zxvf rpi-1.xx.tar.gz
+/// cd rpi-1.xx
 /// ./configure
 /// make
 /// sudo make check
@@ -131,7 +131,7 @@
 ///
 /// \par PWM
 ///
-/// The BCM2835 supports hardware PWM on a limited subset of GPIO pins. This bcm2835 library provides 
+/// The BCM2835 supports hardware PWM on a limited subset of GPIO pins. This rpi library provides
 /// functions for configuring and controlling PWM output on these pins.
 ///
 /// The BCM2835 contains 2 independent PWM channels (0 and 1), each of which be connnected to a limited subset of 
@@ -175,7 +175,7 @@
 ///
 /// \par Real Time performance constraints
 ///
-/// The bcm2835 is a library for user programs (i.e. they run in 'userland'). 
+/// The rpi is a library for user programs (i.e. they run in 'userland').
 /// Such programs are not part of the kernel and are usually
 /// subject to paging and swapping by the kernel while it does other things besides running your program. 
 /// This means that you should not expect to get real-time performance or 
@@ -201,7 +201,7 @@
 /// Matthew Baker has kindly made Python bindings available at:
 ///  https://github.com/mubeta06/py-libbcm2835
 /// Gary Marks has created a Serial Peripheral Interface (SPI) command-line utility 
-/// for Raspberry Pi, based on the bcm2835 library. The 
+/// for Raspberry Pi, based on the rpi library. The
 /// utility, spincl, is licensed under Open Source GNU GPLv3 by iP Solutions (http://ipsolutionscorp.com), as a 
 /// free download with source included: http://ipsolutionscorp.com/raspberry-pi-spi-utility/
 ///
@@ -317,7 +317,7 @@
 #include <fw.h>
 
 /// \defgroup constants Constants for passing to and from library functions
-/// The values here are designed to be passed to various functions in the bcm2835 library.
+/// The values here are designed to be passed to various functions in the rpi library.
 /// @{
 
 
@@ -327,13 +327,14 @@
 #define LOW  0x0
 
 /// Speed of the core clock core_clk
-#define BCM2835_CORE_CLK_HZ                250000000    ///< 250 MHz
+//#define BCM2835_CORE_CLK_HZ                250000000    ///< 250 MHz
+#define BCM2835_CORE_CLK_HZ             1000000000  ///< 1 Ghz
 
 // Physical addresses for various peripheral register sets
 /// Base Physical Address of the BCM 2835 peripheral registers
 #define BCM2835_PERI_BASE               0x20000000
 /// Base Physical Address of the System Timer registers
-#define BCM2835_ST_BASE            (BCM2835_PERI_BASE + 0x3000)
+#define BCM2835_ST_BASE                 (BCM2835_PERI_BASE + 0x3000)
 /// Base Physical Address of the Pads registers
 #define BCM2835_GPIO_PADS               (BCM2835_PERI_BASE + 0x100000)
 /// Base Physical Address of the Clock/timer registers
@@ -343,11 +344,11 @@
 /// Base Physical Address of the SPI0 registers
 #define BCM2835_SPI0_BASE               (BCM2835_PERI_BASE + 0x204000)
 /// Base Physical Address of the BSC0 registers
-#define BCM2835_BSC0_BASE        (BCM2835_PERI_BASE + 0x205000)
+#define BCM2835_BSC0_BASE               (BCM2835_PERI_BASE + 0x205000)
 /// Base Physical Address of the PWM registers
 #define BCM2835_GPIO_PWM                (BCM2835_PERI_BASE + 0x20C000)
 /// Base Physical Address of the BSC1 registers
-#define BCM2835_BSC1_BASE        (BCM2835_PERI_BASE + 0x804000)
+#define BCM2835_BSC1_BASE               (BCM2835_PERI_BASE + 0x804000)
 
 /// Size of memory page on RPi
 #define BCM2835_PAGE_SIZE               (4*1024)
@@ -636,38 +637,38 @@ typedef enum
 // Defines for I2C
 // GPIO register offsets from BCM2835_BSC*_BASE.
 // Offsets into the BSC Peripheral block in bytes per 3.1 BSC Register Map
-#define BCM2835_BSC_C                            0x0000 ///< BSC Master Control
-#define BCM2835_BSC_S                            0x0004 ///< BSC Master Status
+#define BCM2835_BSC_C                           0x0000 ///< BSC Master Control
+#define BCM2835_BSC_S                           0x0004 ///< BSC Master Status
 #define BCM2835_BSC_DLEN                        0x0008 ///< BSC Master Data Length
-#define BCM2835_BSC_A                            0x000c ///< BSC Master Slave Address
+#define BCM2835_BSC_A                           0x000c ///< BSC Master Slave Address
 #define BCM2835_BSC_FIFO                        0x0010 ///< BSC Master Data FIFO
-#define BCM2835_BSC_DIV                            0x0014 ///< BSC Master Clock Divider
-#define BCM2835_BSC_DEL                            0x0018 ///< BSC Master Data Delay
+#define BCM2835_BSC_DIV                         0x0014 ///< BSC Master Clock Divider
+#define BCM2835_BSC_DEL                         0x0018 ///< BSC Master Data Delay
 #define BCM2835_BSC_CLKT                        0x001c ///< BSC Master Clock Stretch Timeout
 
 // Register masks for BSC_C
 #define BCM2835_BSC_C_I2CEN                    0x00008000 ///< I2C Enable, 0 = disabled, 1 = enabled
-#define BCM2835_BSC_C_INTR                        0x00000400 ///< Interrupt on RX
-#define BCM2835_BSC_C_INTT                        0x00000200 ///< Interrupt on TX
-#define BCM2835_BSC_C_INTD                        0x00000100 ///< Interrupt on DONE
-#define BCM2835_BSC_C_ST                        0x00000080 ///< Start transfer, 1 = Start a new transfer
-#define BCM2835_BSC_C_CLEAR_1                    0x00000020 ///< Clear FIFO Clear
-#define BCM2835_BSC_C_CLEAR_2                    0x00000010 ///< Clear FIFO Clear
-#define BCM2835_BSC_C_READ                        0x00000001 ///<	Read transfer
+#define BCM2835_BSC_C_INTR                     0x00000400 ///< Interrupt on RX
+#define BCM2835_BSC_C_INTT                     0x00000200 ///< Interrupt on TX
+#define BCM2835_BSC_C_INTD                     0x00000100 ///< Interrupt on DONE
+#define BCM2835_BSC_C_ST                       0x00000080 ///< Start transfer, 1 = Start a new transfer
+#define BCM2835_BSC_C_CLEAR_1                  0x00000020 ///< Clear FIFO Clear
+#define BCM2835_BSC_C_CLEAR_2                  0x00000010 ///< Clear FIFO Clear
+#define BCM2835_BSC_C_READ                     0x00000001 ///<	Read transfer
 
 // Register masks for BSC_S
-#define BCM2835_BSC_S_CLKT                        0x00000200 ///< Clock stretch timeout
-#define BCM2835_BSC_S_ERR                        0x00000100 ///< ACK error
-#define BCM2835_BSC_S_RXF                        0x00000080 ///< RXF FIFO full, 0 = FIFO is not full, 1 = FIFO is full
-#define BCM2835_BSC_S_TXE                        0x00000040 ///< TXE FIFO full, 0 = FIFO is not full, 1 = FIFO is full
-#define BCM2835_BSC_S_RXD                        0x00000020 ///< RXD FIFO contains data
-#define BCM2835_BSC_S_TXD                        0x00000010 ///< TXD FIFO can accept data
-#define BCM2835_BSC_S_RXR                        0x00000008 ///< RXR FIFO needs reading (full)
-#define BCM2835_BSC_S_TXW                        0x00000004 ///< TXW FIFO needs writing (full)
-#define BCM2835_BSC_S_DONE                        0x00000002 ///< Transfer DONE
-#define BCM2835_BSC_S_TA                        0x00000001 ///< Transfer Active
+#define BCM2835_BSC_S_CLKT                     0x00000200 ///< Clock stretch timeout
+#define BCM2835_BSC_S_ERR                      0x00000100 ///< ACK error
+#define BCM2835_BSC_S_RXF                      0x00000080 ///< RXF FIFO full, 0 = FIFO is not full, 1 = FIFO is full
+#define BCM2835_BSC_S_TXE                      0x00000040 ///< TXE FIFO full, 0 = FIFO is not full, 1 = FIFO is full
+#define BCM2835_BSC_S_RXD                      0x00000020 ///< RXD FIFO contains data
+#define BCM2835_BSC_S_TXD                      0x00000010 ///< TXD FIFO can accept data
+#define BCM2835_BSC_S_RXR                      0x00000008 ///< RXR FIFO needs reading (full)
+#define BCM2835_BSC_S_TXW                      0x00000004 ///< TXW FIFO needs writing (full)
+#define BCM2835_BSC_S_DONE                     0x00000002 ///< Transfer DONE
+#define BCM2835_BSC_S_TA                       0x00000001 ///< Transfer Active
 
-#define BCM2835_BSC_FIFO_SIZE                16 ///< BSC FIFO size
+#define BCM2835_BSC_FIFO_SIZE                  16 ///< BSC FIFO size
 
 /// \brief bcm2835I2CClockDivider
 /// Specifies the divider used to generate the I2C clock from the system clock.
@@ -675,9 +676,9 @@ typedef enum
 typedef enum
 {
     BCM2835_I2C_CLOCK_DIVIDER_2500 = 2500,      ///< 2500 = 10us = 100 kHz
-    BCM2835_I2C_CLOCK_DIVIDER_626 = 626,       ///< 622 = 2.504us = 399.3610 kHz
-    BCM2835_I2C_CLOCK_DIVIDER_150 = 150,       ///< 150 = 60ns = 1.666 MHz (default at reset)
-    BCM2835_I2C_CLOCK_DIVIDER_148 = 148,       ///< 148 = 59ns = 1.689 MHz
+    BCM2835_I2C_CLOCK_DIVIDER_626 = 626,        ///< 622 = 2.504us = 399.3610 kHz
+    BCM2835_I2C_CLOCK_DIVIDER_150 = 150,        ///< 150 = 60ns = 1.666 MHz (default at reset)
+    BCM2835_I2C_CLOCK_DIVIDER_148 = 148,        ///< 148 = 59ns = 1.689 MHz
 } bcm2835I2CClockDivider;
 
 /// \brief bcm2835I2CReasonCodes
@@ -816,7 +817,7 @@ extern "C" {
 #endif
 
 /// \defgroup init Library initialisation and management
-/// These functions allow you to intialise and control the bcm2835 library
+/// These functions allow you to intialise and control the rpi library
 /// @{
 
 /// Initialise the library by opening /dev/mem and getting pointers to the
@@ -1206,7 +1207,7 @@ extern void bcm2835_i2c_setClockDivider(U16 divider);
 /// the equivalent I2C clock divider. ( see \sa bcm2835_i2c_setClockDivider)
 /// For the I2C standard 100khz you would set baudrate to 100000
 /// The use of baudrate corresponds to its use in the I2C kernel device
-/// driver. (Of course, bcm2835 has nothing to do with the kernel driver)
+/// driver. (Of course, rpi has nothing to do with the kernel driver)
 extern void bcm2835_i2c_set_baudrate(U32 baudrate);
 
 /// Transfers any number of bytes to the currently selected I2C slave.
@@ -1326,8 +1327,8 @@ extern void bcm2835_pwm_set_data(U8 channel, U32 data);
 
 /// @example i2c.c
 /// Command line utility for executing i2c commands with the 
-/// Broadcom bcm2835. Contributed by Shahrooz Shahparnia.
+/// Broadcom rpi. Contributed by Shahrooz Shahparnia.
 
 /// example gpio.c
 /// Command line utility for executing gpio commands with the 
-///   Broadcom bcm2835. Contributed by Shahrooz Shahparnia.
+///   Broadcom rpi. Contributed by Shahrooz Shahparnia.

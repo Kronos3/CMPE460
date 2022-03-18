@@ -1,6 +1,10 @@
 #ifndef CMPE460_OLED_H
 #define CMPE460_OLED_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 
 #ifndef __oled_LINKED__
@@ -100,5 +104,9 @@ void oled_display_clear(void);
  * @param str line to print
  */
 void oled_print(TextCanvas* tcanvas, const char* str);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_OLED_H

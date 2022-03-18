@@ -1,6 +1,10 @@
 #ifndef CMPE460_ADC_H
 #define CMPE460_ADC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 
 #ifndef __adc_LINKED__
@@ -24,5 +28,9 @@ U16 adc_in(void);
  * @return voltage from 0-2.5V (ref)
  */
 F64 adc_voltage(U16 adc_i);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_ADC_H

@@ -5,6 +5,7 @@
 
 typedef enum
 {
+    SSD1306_BAUD_RATE = 400000,
     SSD1306_ADDR = 0x3C,
 
     SSD1306_MULTIPLEX_RATIO = 0xA8,
@@ -71,7 +72,7 @@ typedef enum
 static void oled_send_command(U8 cmd)
 {
     const U8 i2c_data[2] = {SSD1306_CONTROL_REG, cmd};
-    i2c0_write(i2c_data, 2);
+    i2c_write(i2c_data, 2);
 }
 
 void oled_draw(const OLEDCanvas data)
@@ -81,13 +82,14 @@ void oled_draw(const OLEDCanvas data)
     for (U32 i = 0; i < OLED_SCREEN; i++)
     {
         i2c_data[1] = data[i];
-        i2c0_write(i2c_data, 2);
+        i2c_write(i2c_data, 2);
     }
 }
 
 void oled_init(void)
 {
-    i2c0_init(SSD1306_ADDR);
+    i2c_init(SSD1306_BAUD_RATE);
+    i2c_set_address(SSD1306_ADDR);
 
     // init SSD1306 settings
     oled_send_command(SSD1306_DISPLAYOFF);  // Display off

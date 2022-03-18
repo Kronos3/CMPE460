@@ -1,6 +1,10 @@
 #ifndef CMPE460_TIM_H
 #define CMPE460_TIM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 
 #ifndef __tim_LINKED__
@@ -8,7 +12,7 @@
 #endif
 
 #ifdef __BCM2835__
-#include "bcm2835/tim.h"
+#include "rpi/tim.h"
 #elif defined(__MSP432P401R__)
 #include "msp432p401r/tim.h"
 #endif
@@ -19,7 +23,7 @@
  * @param task
  * @param hz
  */
-void tim_init(tim_t timer, void (*task)(void), F64 hz);
+void tim_init(tim_t timer, void (* task)(void), F64 hz);
 
 /**
  * Start a timer
@@ -32,5 +36,10 @@ void tim_start(tim_t timer);
  * @param timer timer to stop
  */
 void tim_stop(tim_t timer);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_TIM_H

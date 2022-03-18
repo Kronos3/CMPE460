@@ -1,18 +1,21 @@
 #ifndef CMPE460_INSTR_H
 #define CMPE460_INSTR_H
 
-extern void enable_irq(void);
-extern void disable_irq(void);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern void _enable_interrupts(void);
 
 /**
  * Mask all interrupts on the CPU
  */
-#define DISABLE_INTERRUPTS disable_irq
+#define DISABLE_INTERRUPTS() __asm__ ("cpsid if")
 
 /**
  * Unmask all interrupts (that were previously masked)
  */
-#define ENABLE_INTERRUPTS enable_irq
+#define ENABLE_INTERRUPTS _enable_interrupts
 
 /**
  * Sets a debugger breakpoint
@@ -24,5 +27,9 @@ extern void disable_irq(void);
  * Processor waits for next interrupt
  */
 #define WAIT_FOR_INTERRUPT() __asm__("WFI")
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_INSTR_H

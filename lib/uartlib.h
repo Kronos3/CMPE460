@@ -1,6 +1,10 @@
 #ifndef CMPE460_UARTLIB_H
 #define CMPE460_UARTLIB_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 #include <drv/uart.h>
 
@@ -16,5 +20,9 @@ I32 uvfprintf(
         uart_t uart,
         const char* format,
         va_list args);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_UARTLIB_H

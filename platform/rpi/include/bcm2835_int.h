@@ -1,21 +1,15 @@
 #ifndef CMPE460_BCM2835_INT_H
 #define CMPE460_BCM2835_INT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 
 #define BCM2835_INTC_TOTAL_IRQ       64 + 8
 
 #define BCM2835_BASE_INTC           (0x2000B200)
-#define BCM2835_INTC_IRQ_BASIC      (BCM2835_BASE_INTC + 0x00)
-#define BCM2835_IRQ_PENDING1        (BCM2835_BASE_INTC + 0x04)
-#define BCM2835_IRQ_PENDING2        (BCM2835_BASE_INTC + 0x08)
-#define BCM2835_IRQ_FIQ_CTRL        (BCM2835_BASE_INTC + 0x0C)
-#define BCM2835_IRQ_ENABLE1         (BCM2835_BASE_INTC + 0x10)
-#define BCM2835_IRQ_ENABLE2         (BCM2835_BASE_INTC + 0x14)
-#define BCM2835_IRQ_ENABLE_BASIC    (BCM2835_BASE_INTC + 0x18)
-#define BCM2835_IRQ_DISABLE1        (BCM2835_BASE_INTC + 0x1C)
-#define BCM2835_IRQ_DISABLE2        (BCM2835_BASE_INTC + 0x20)
-#define BCM2835_IRQ_DISABLE_BASIC   (BCM2835_BASE_INTC + 0x24)
 
 typedef enum
 {
@@ -55,5 +49,18 @@ void bcm2835_interrupt_register(bcm2835_Interrupt irq, bcm2835_InterruptHandler 
  */
 void bcm2835_interrupt_enable(bcm2835_Interrupt irq);
 void bcm2835_interrupt_disable(bcm2835_Interrupt irq);
+
+/**
+ * Main extry point of the kernel
+ * Must be implemented per binary
+ */
+void main(void);
+
+extern void start_l1cache(void);
+extern void stop_l1cache(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_BCM2835_INT_H

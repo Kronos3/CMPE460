@@ -1,6 +1,10 @@
 #ifndef CMPE460_PWM_H
 #define CMPE460_PWM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <fw.h>
 
 #ifndef __pwm_LINKED__
@@ -45,5 +49,9 @@ void pwm_start(PwmPin pwm);
  * @param pwm pwm pin to stop signal on
  */
 void pwm_stop(PwmPin pwm);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_PWM_H

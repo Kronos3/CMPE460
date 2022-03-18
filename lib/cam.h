@@ -1,6 +1,10 @@
 #ifndef CMPE460_CAM_H
 #define CMPE460_CAM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <lib/gbl.h>
 
 #include <drv/tim.h>
@@ -59,5 +63,9 @@ void cam_process_start(void);
  *          FALSE if no camera request was running
  */
 bool_t cam_process_stop(GblReply reply_on_cancel);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CMPE460_CAM_H

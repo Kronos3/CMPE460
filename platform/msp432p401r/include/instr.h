@@ -1,6 +1,13 @@
 #ifndef CMPE460_INSTR_H
 #define CMPE460_INSTR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+
 /**
  * Mask all interrupts on the CPU
  */
