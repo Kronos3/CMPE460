@@ -8,7 +8,7 @@ Date: 1/15/22
 All rights reserved.
 */
 
-#include "uart.h"            // you will need to create this file
+#include "drv/uart.h"            // you will need to create this file
 
 #define BAUD_RATE 9600      //default baud rate
 

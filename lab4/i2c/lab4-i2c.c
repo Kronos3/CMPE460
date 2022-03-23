@@ -1,5 +1,5 @@
-#include <oled.h>
-#include <uart.h>
+#include <lib/oled.h>
+#include <drv/uart.h>
 #include <string.h>
 
 // There's two times more columns than rows

@@ -58,7 +58,7 @@ int main(void)
 
     // Run the continuous camera process to test
     // on the oscilloscope
-    cam_process(camera_buf, EXPOSURE_TIME, SYSTICK, gbl_reply_init(camera_handler, 0));
+    cam_process(&camera_buf, EXPOSURE_TIME, SYSTICK, gbl_reply_init(camera_handler, 0));
 
     while(TRUE)
     {
@@ -69,7 +69,7 @@ int main(void)
         uprintf("-1\r\n");
         for (U32 i = 0; i < CAMERA_BUF_N; i++)
         {
-            uprintf("%u\r\n", camera_buf[i]);
+            uprintf("%u\r\n", camera_buf.data[i]);
         }
         uprintf("-2\r\n");
     }

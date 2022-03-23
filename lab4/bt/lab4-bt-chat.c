@@ -8,7 +8,7 @@ Date: 1/19/22
 All rights reserved.
 */
 
-#include <uart.h>
+#include <drv/uart.h>
 
 #define BUF_SIZE 64
 #define BAUD_RATE 9600

@@ -8,6 +8,7 @@ static bool_t drive_params_init = FALSE;
 static DriveParams drive_params;
 
 #define PROCESS_FRAME_N MATH_CONVOLVE_N(CAMERA_BUF_N, DRIVE_SMOOTHING_LENGTH)
+#define DERIV_FRAME_N MATH_CONVOLVE_N(PROCESS_FRAME_N, 3)
 
 // This pointer will be set from the camera reply
 // It needs to be copied asynchronously (outside the IRQ)
@@ -17,10 +18,12 @@ static const CameraLine* volatile frame_ready = NULL;
 static U32 frames_dropped = 0;
 
 static F64 gaussian_smooth[DRIVE_SMOOTHING_LENGTH];
+static F64 gaussian_derivative[3] = {-1, 1, 0}; // dx = F[x] - F[x-1]
+
 static F64 casted_frame[CAMERA_BUF_N];
 static F64 smoothed_frame[PROCESS_FRAME_N];
-static F64 deriv_frame[PROCESS_FRAME_N - 1];
-static U8 threshold_frame[PROCESS_FRAME_N - 1];
+static F64 deriv_frame[DERIV_FRAME_N];
+static U8 threshold_frame[DERIV_FRAME_N];
 
 // This buffer is used to perform the actual processing. It will
 // be a copy of the latest frame that has not been dropped
@@ -32,6 +35,7 @@ typedef enum
     FRAME_EDGE_NONE = 0,
     FRAME_EDGE_LEFT = 1 << 0,
     FRAME_EDGE_RIGHT = 1 << 1,
+    FRAME_EDGE_BOTH = FRAME_EDGE_LEFT | FRAME_EDGE_RIGHT,
 } frame_edge_t;
 
 typedef struct
@@ -119,7 +123,7 @@ drive_bang_bang_main(const FrameEdge* edges)
             turn_left = TRUE;
             distance_closeness = edges->right;
             break;
-        case (FRAME_EDGE_LEFT | FRAME_EDGE_RIGHT):
+        case FRAME_EDGE_BOTH:
             // Find the closest edge
             if (edges->left < edges->right)
             {
@@ -170,12 +174,13 @@ static U8* drive_process_frame(const CameraLine* raw_frame)
                   CAMERA_BUF_N, DRIVE_SMOOTHING_LENGTH);
 
     // Find the gradient of the smoothed frame to find edges
-    math_gradient(deriv_frame, smoothed_frame, PROCESS_FRAME_N);
+//    math_gradient(deriv_frame, smoothed_frame, PROCESS_FRAME_N);
+    math_convolve(deriv_frame, smoothed_frame, gaussian_derivative,
+                  PROCESS_FRAME_N, 3);
 
-    // One of the samples gets merged in during the derivative
     math_threshold(threshold_frame, deriv_frame,
                    drive_params.derivative_threshold,
-                   PROCESS_FRAME_N - 1);
+                   DERIV_FRAME_N);
     return threshold_frame;
 }
 

@@ -8,8 +8,8 @@ Date: 1/19/22
 All rights reserved.
 */
 
-#include <uart.h>
-#include <led.h>
+#include <drv/uart.h>
+#include <drv/msp432p401r/led.h>
 
 #define BAUD_RATE 9600
 

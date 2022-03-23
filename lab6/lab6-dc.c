@@ -65,17 +65,20 @@ int main(void)
     uart_init(UART_USB, 115200);
     switch_init(SWITCH_1, SWITCH_INT_PRESS, toggle_timer);
 
-    // P2.4
-    PwmPin forward = {
-            MSP432_PWM_0,
-            MSP432_PWM_PIN_1
+    DcParam motor = {
+            // P2.4
+            .forward = {
+                MSP432_PWM_0,
+                        MSP432_PWM_PIN_1
+            },
+            // P2.6
+            .backward = {
+                    MSP432_PWM_0,
+                    MSP432_PWM_PIN_3
+            },
+            .base_frequency = 10000
     };
-    // P2.6
-    PwmPin backward = {
-            MSP432_PWM_0,
-            MSP432_PWM_PIN_3
-    };
-    dc_cfg(DC_0, forward, backward, 10000);
+    dc_cfg(DC_0, &motor);
     dc_init();
 
     // 10ms delay between ticks
