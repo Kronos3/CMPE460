@@ -15,4 +15,12 @@ target_link_libraries(dc pwm)
 gen_library(i2c_mux i2c_mux.c i2c_mux.h)
 target_link_libraries(i2c_mux i2c)
 
-add_subdirectory(ardu_cam)
+#add_subdirectory(ardu_cam)
+
+gen_library(steering steering.c steering.h)
+target_link_libraries(steering pwm)
+
+gen_library(math math.c math.h)
+
+gen_library(drive drive.c drive.h)
+target_link_libraries(drive dc math steering cam gbl)

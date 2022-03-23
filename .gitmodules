@@ -1,3 +1,0 @@
-[submodule "os/TumbarRTOS"]
-	path = os/TumbarRTOS
-	url = git@github.com:Kronos3/TumbarRTOS.git

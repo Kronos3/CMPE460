@@ -19,17 +19,21 @@ typedef enum
     DC_N
 } dc_t;
 
+typedef struct
+{
+    PwmPin forward;
+    PwmPin backward;
+    F64 base_frequency;
+} DcParam;
+
 /**
  * Configure a DC motor channel to operate with PWM
  * @param dc DC channel to configure
- * @param pwm_pin_forward PWM pin to use for forward drive
- * @param pwm_pin_backward PWM pin to use for backward drive
- * @param base_frequency base pwm frequency
+ * @param param.forward PWM pin to use for forward drive
+ * @param param.backward PWM pin to use for backward drive
+ * @param param.base_frequency base pwm frequency
  */
-void dc_cfg(dc_t dc,
-            PwmPin pwm_pin_forward,
-            PwmPin pwm_pin_backward,
-            F64 base_frequency);
+void dc_cfg(dc_t dc, const DcParam* param);
 
 /**
  * Run DC initialization after all dc_cfg() calls have been run

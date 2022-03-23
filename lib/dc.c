@@ -2,25 +2,16 @@
 
 static bool_t dc_inited = FALSE;
 
-static struct {
-    bool_t configured;
-    PwmPin forward;
-    PwmPin backward;
-    F64 base_frequency;
-} dc_profiles[DC_N] = {0};
+static DcParam dc_profiles[DC_N] = {0};
+static bool_t configured[DC_N] = {FALSE};
 
-void dc_cfg(dc_t dc,
-            PwmPin pwm_pin_forward,
-            PwmPin pwm_pin_backward,
-            F64 base_frequency)
+void dc_cfg(dc_t dc, const DcParam* param)
 {
     FW_ASSERT(!dc_inited && "dc_cfg() cannot run after dc_init()");
     FW_ASSERT(dc >= 0 && dc < DC_N, dc);
 
-    dc_profiles[dc].forward = pwm_pin_forward;
-    dc_profiles[dc].backward = pwm_pin_backward;
-    dc_profiles[dc].base_frequency = base_frequency;
-    dc_profiles[dc].configured = TRUE;
+    dc_profiles[dc] = *param;
+    configured[dc] = TRUE;
 }
 
 void dc_init(void)
@@ -29,7 +20,7 @@ void dc_init(void)
 
     for (dc_t dc = DC_0; dc < DC_N; dc++)
     {
-        if (dc_profiles[dc].configured)
+        if (configured[dc])
         {
             pwm_init(dc_profiles[dc].forward, dc_profiles[dc].base_frequency);
             pwm_init(dc_profiles[dc].backward, dc_profiles[dc].base_frequency);
@@ -45,7 +36,7 @@ void dc_start(void)
 
     for (dc_t dc = DC_0; dc < DC_N; dc++)
     {
-        if (dc_profiles[dc].configured)
+        if (configured[dc])
         {
             dc_set(dc, 0.0);
             pwm_start(dc_profiles[dc].forward);
@@ -58,7 +49,7 @@ void dc_set(dc_t dc, F64 speed)
 {
     FW_ASSERT(dc_inited && "You need to run dc_init() before dc_set()");
     FW_ASSERT(dc >= 0 && dc < DC_N, dc);
-    FW_ASSERT(dc_profiles[dc].configured && "DC motor has not been configured", dc);
+    FW_ASSERT(configured[dc] && "DC motor has not been configured", dc);
 
     FW_ASSERT(speed >= -1.0 && speed <= 1.0 && "Speed must be between -1 and 1", speed * 100);
 

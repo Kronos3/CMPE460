@@ -2,6 +2,8 @@
 #include <drv/gpio.h>
 #include <drv/adc.h>
 
+#include <instr.h>
+
 // Run the camera clock at 100kHz
 #define CAMERA_FREQUENCY (100000.0)
 
@@ -25,15 +27,15 @@ static struct
 
 static struct
 {
-    U16* output_buffer;     //!< ADC sample output buffer
-    GblReply reply;         //!< Reply to send when we are finished
-    U32 i;                  //!< State specific tick counter
+    CameraLine* output_buffer;      //!< ADC sample output buffer
+    GblReply reply;                 //!< Reply to send when we are finished
+    U32 i;                          //!< State specific tick counter
     CameraState state;
 } cam_request;
 
 static struct
 {
-    U16* output_buffer;
+    CameraLine* output_buffer;
     GblReply reply;
 } cam_process_state;
 
@@ -118,7 +120,7 @@ static void cam_tick_scan(void)
     // Poll the ADC before the next rising edge
     if (cam_request.i % 2)
     {
-        cam_request.output_buffer[cam_request.i / 2] = adc_in();
+        cam_request.output_buffer->data[cam_request.i / 2] = adc_in();
     }
 
     // Toggle the clock signal
@@ -170,7 +172,7 @@ void cam_irq(void)
     }
 }
 
-void cam_sample(CameraLine dest, GblReply reply)
+void cam_sample(CameraLine* dest, GblReply reply)
 {
     // Make sure there is no running request
     FW_ASSERT(cam_request.state == CAM_IDLE && "Running camera request",
@@ -199,7 +201,7 @@ static void camera_process_handler()
                cam_process_state.reply);
 }
 
-void cam_process(CameraLine dest,
+void cam_process(CameraLine* dest,
                  F64 integration_period,
                  tim_t si_timer,
                  GblReply reply)

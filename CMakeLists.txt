@@ -27,4 +27,5 @@ add_subdirectory(lab4)
 add_subdirectory(lab5)
 add_subdirectory(lab6)
 
+add_subdirectory(car-vo)
 add_subdirectory(car)

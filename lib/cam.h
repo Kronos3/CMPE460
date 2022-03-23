@@ -19,7 +19,10 @@ extern "C" {
 /**
  * Holds a single line of ADC readings from the line-scan camera
  */
-typedef U16 CameraLine[CAMERA_BUF_N];
+typedef struct
+{
+    U16 data[CAMERA_BUF_N];
+} CameraLine;
 
 /**
  * Initialize the peripherals to drive the camera
@@ -31,7 +34,7 @@ void cam_init(GpioPin clk, GpioPin si, tim_t clk_timer);
  * @param dest destination buffer
  * @param reply reply to send when camera is done
  */
-void cam_sample(CameraLine dest, GblReply reply);
+void cam_sample(CameraLine* dest, GblReply reply);
 
 /**
  * Exposed camera IRQ that needs to be called from SysTick
@@ -45,7 +48,7 @@ void cam_irq(void);
  * @param integration_period time to integrate each image on the camera
  * @param reply reply to call each time an image is ready
  */
-void cam_process(CameraLine dest,
+void cam_process(CameraLine* dest,
                  F64 integration_period,
                  tim_t si_timer,
                  GblReply reply);

@@ -2,19 +2,19 @@ Circuit: * Z:\home\tumbar\git\CMPE460\lab7\sallen_key.asc
 
 Direct Newton iteration for .op point succeeded.
 
-Date: Sun Mar 20 19:49:15 2022
-Total elapsed time: 0.067 seconds.
+Date: Tue Mar 22 12:39:59 2022
+Total elapsed time: 0.087 seconds.
 
 tnom = 27
 temp = 27
 method = trap
-totiter = 10
+totiter = 11
 traniter = 0
 tranpoints = 0
 accept = 0
 rejected = 0
-matrix size = 39
-fillins = 31
+matrix size = 40
+fillins = 45
 solver = Normal
-Matrix Compiler1:     195 opcodes
-Matrix Compiler2: 3.62 KB object code size
+Matrix Compiler1:     232 opcodes
+Matrix Compiler2: 4.00 KB object code size

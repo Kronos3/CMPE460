@@ -72,9 +72,9 @@ typedef enum
     TRUE
 } bool_t;
 
-#define ABS(x) ((x) < 0) ? (-(x)) : (x)
-#define MIN(a, b) ((a) < (b)) ? (a) : (b)
-#define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#define FW_ABS(x) ((x) < 0) ? (-(x)) : (x)
+#define FW_MIN(a, b) ((a) < (b)) ? (a) : (b)
+#define FW_MAX(a, b) ((a) > (b)) ? (a) : (b)
 
 /**
  * Handle assertion failures
@@ -97,8 +97,6 @@ __attribute__((noreturn)) void fw_assertion_failure(const char* file, U32 line, 
 #define FW_ASSERT(expr, ...) do {                \
     if (!(expr)) fw_assertion_failure(__FILE__, __LINE__, #expr, COUNT_ARGUMENTS(__VA_ARGS__), ##__VA_ARGS__);   \
 } while(0)
-
-#define FW_ABS(x_) ((x_) < 0 ? -(x_) : (x_))
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
