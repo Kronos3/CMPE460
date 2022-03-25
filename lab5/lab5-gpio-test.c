@@ -1,7 +1,7 @@
 #include <drv/adc.h>
 #include <lib/uartlib.h>
 #include <drv/tim.h>
-#include <drv/msp432p401r/switch.h>
+#include <drv/msp432p4/switch.h>
 #include <drv/gpio.h>
 
 static const GpioPin clk = {GPIO_PORT_5, 1 << 4};

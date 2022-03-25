@@ -30,12 +30,11 @@
 *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  
 * 
-*  MSP432P401R Interrupt Vector Table
+*  MSP432P4111 Interrupt Vector Table
 * 
 *****************************************************************************/
 
 #include <stdint.h>
-#include <instr.h>
 
 /* Entry point for the application. */
 extern int _mainCRTStartup();
@@ -65,18 +64,13 @@ extern void DebugMon_Handler    (void) __attribute__((weak, alias("Default_Handl
 extern void PendSV_Handler      (void) __attribute__((weak, alias("Default_Handler")));
 
 /* device specific interrupt handler */
-#ifndef __tim_LINKED__
 extern void SysTick_Handler     (void) __attribute__((weak,alias("Default_Handler")));
-#else
-extern void SysTick_Handler     (void);
-#endif
-
 extern void PSS_IRQHandler      (void) __attribute__((weak,alias("Default_Handler")));
 extern void CS_IRQHandler       (void) __attribute__((weak,alias("Default_Handler")));
 extern void PCM_IRQHandler      (void) __attribute__((weak,alias("Default_Handler")));
 extern void WDT_A_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
 extern void FPU_IRQHandler      (void) __attribute__((weak,alias("Default_Handler")));
-extern void FLCTL_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
+extern void FLCTL_A_IRQHandler  (void) __attribute__((weak,alias("Default_Handler")));
 extern void COMP_E0_IRQHandler  (void) __attribute__((weak,alias("Default_Handler")));
 extern void COMP_E1_IRQHandler  (void) __attribute__((weak,alias("Default_Handler")));
 extern void TA0_0_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
@@ -96,16 +90,8 @@ extern void EUSCIB1_IRQHandler  (void) __attribute__((weak,alias("Default_Handle
 extern void EUSCIB2_IRQHandler  (void) __attribute__((weak,alias("Default_Handler")));
 extern void EUSCIB3_IRQHandler  (void) __attribute__((weak,alias("Default_Handler")));
 extern void ADC14_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
-
-// tim will override these IRQs
-#ifndef __tim_LINKED__
 extern void T32_INT1_IRQHandler (void) __attribute__((weak,alias("Default_Handler")));
 extern void T32_INT2_IRQHandler (void) __attribute__((weak,alias("Default_Handler")));
-#else
-extern void T32_INT1_IRQHandler (void);
-extern void T32_INT2_IRQHandler (void);
-#endif
-
 extern void T32_INTC_IRQHandler (void) __attribute__((weak,alias("Default_Handler")));
 extern void AES256_IRQHandler   (void) __attribute__((weak,alias("Default_Handler")));
 extern void RTC_C_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
@@ -120,6 +106,7 @@ extern void PORT3_IRQHandler    (void) __attribute__((weak,alias("Default_Handle
 extern void PORT4_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
 extern void PORT5_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
 extern void PORT6_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
+extern void LCD_F_IRQHandler    (void) __attribute__((weak,alias("Default_Handler")));
 
 /* Interrupt vector table.  Note that the proper constructs must be placed on this to */
 /* ensure that it ends up at physical address 0x0000.0000 or at the start of          */
@@ -148,7 +135,7 @@ void (* const interruptVectors[])(void) __attribute__ ((section (".intvecs"))) =
     PCM_IRQHandler,                        /* PCM Interrupt             */
     WDT_A_IRQHandler,                      /* WDT_A Interrupt           */
     FPU_IRQHandler,                        /* FPU Interrupt             */
-    FLCTL_IRQHandler,                      /* Flash Controller Interrupt*/
+    FLCTL_A_IRQHandler,                    /* Flash Controller Interrupt*/
     COMP_E0_IRQHandler,                    /* COMP_E0 Interrupt         */
     COMP_E1_IRQHandler,                    /* COMP_E1 Interrupt         */
     TA0_0_IRQHandler,                      /* TA0_0 Interrupt           */
@@ -183,7 +170,8 @@ void (* const interruptVectors[])(void) __attribute__ ((section (".intvecs"))) =
     PORT3_IRQHandler,                      /* Port3 Interrupt           */
     PORT4_IRQHandler,                      /* Port4 Interrupt           */
     PORT5_IRQHandler,                      /* Port5 Interrupt           */
-    PORT6_IRQHandler                       /* Port6 Interrupt           */
+    PORT6_IRQHandler,                      /* Port6 Interrupt           */
+    LCD_F_IRQHandler                       /* LCD_F Interrupt           */
 };
 
 /* Forward declaration of the default fault handlers. */
@@ -211,12 +199,6 @@ void Reset_Handler(void)
 
     /* Jump to the main initialization routine. */
     _mainCRTStartup();
-
-    // Hang the system forever
-    while(1)
-    {
-        WAIT_FOR_INTERRUPT();
-    }
 }
 
 /* This is the code that gets called when the processor receives an unexpected  */

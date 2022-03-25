@@ -13,8 +13,8 @@ extern "C" {
 
 #ifdef __BCM2835__
 #include "rpi/gpio.h"
-#elif defined(__MSP432P401R__)
-#include "msp432p401r/gpio.h"
+#elif defined(__MSP432P4__)
+#include "msp432p4/gpio.h"
 #endif
 
 /**

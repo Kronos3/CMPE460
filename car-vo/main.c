@@ -4,7 +4,7 @@
 #include <drv/pwm.h>
 #include <drv/uart.h>
 #include <lib/uartlib.h>
-#include <drv/msp432p401r/led.h>
+#include <drv/msp432p4/led.h>
 
 #define SLAVE_ADDRESS (0x48)
 

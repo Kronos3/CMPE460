@@ -1,4 +1,4 @@
-#include <drv/msp432p401r/switch.h>
+#include <drv/msp432p4/switch.h>
 #include <drv/adc.h>
 #include <lib/uartlib.h>
 
@@ -24,7 +24,7 @@ static F64 c_to_f(F64 celsius)
 static void get_temp(void)
 {
     U32 adc_raw = adc_in();
-    F64 voltage = adc_voltage(adc_raw);
+    F64 voltage = adc_raw_to_voltage(adc_raw);
     F64 c = to_temp_c(voltage);
     F64 f = c_to_f(c);
 

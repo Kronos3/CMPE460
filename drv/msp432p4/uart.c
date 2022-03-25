@@ -27,7 +27,7 @@ void uart_init(uart_t id, U32 baud_rate)
     const UART_Device* device = &uart_devices[id];
 
     //Set the UART to RESET state (set bit0 of EUSCI_A0->CTLW0 register to '1'
-    device->uart->CTLW0 |= UCSWRST;
+    device->uart->CTLW0 |= EUSCI_A_CTLW0_SWRST;
 
     // bit15=0,      no parity bits
     // bit14=x,      not used when parity is disabled
@@ -44,7 +44,7 @@ void uart_init(uart_t id, U32 baud_rate)
     // bit0=1,       hold logic in reset state while configuring
 
     // set CTLW0 - hold logic and configure clock source to SMCLK
-    device->uart->CTLW0 = UCSSEL__SMCLK | UCSWRST;
+    device->uart->CTLW0 = EUSCI_A_CTLW0_SSEL__SMCLK | EUSCI_A_CTLW0_SWRST;
 
     // baud rate
     // N = clock/baud rate = clock_speed/BAUD_RATE
@@ -64,15 +64,15 @@ void uart_init(uart_t id, U32 baud_rate)
     device->port->SEL1 &= ~device->pin_mask;
 
     // CTLW0 register - release from reset state
-    device->uart->CTLW0 &= ~UCSWRST;
+    device->uart->CTLW0 &= ~EUSCI_A_CTLW0_SWRST;
 
     // disable interrupts (transmit ready, start received, transmit empty, receive full)
     // IE register;
     device->uart->IE &= ~(
-              UCTXCPTIE // Transmit complete interrupt disable
-            | UCSTTIE   // Start bit interrupt disable
-            | UCTXIE    // Transmit interrupt disable
-            | UCRXIE    // Receive interrupt disable
+              EUSCI_A_IE_TXCPTIE   // Transmit complete interrupt disable
+            | EUSCI_A_IE_STTIE  // Start bit interrupt disable
+            | EUSCI_A_IE_TXIE    // Transmit interrupt disable
+            | EUSCI_A_IE_RXIE    // Receive interrupt disable
     );
 }
 
@@ -85,7 +85,7 @@ U8 uart_getchar(uart_t id)
     // IFG register
     // Receive interrupt flag. UCRXIFG is set when UCAxRXBUF has received a
     // complete character.
-    while (!(device->uart->IFG & UCRXIFG));
+    while (!(device->uart->IFG & EUSCI_A_IFG_RXIFG));
 
     // read character and store in in_char variable
     // RXBUF register
@@ -103,7 +103,7 @@ void uart_putchar(uart_t id, char ch)
     // IFG register
     // Transmit complete interrupt flag. UCTXCPTIFG is set when the entire byte in the
     // internal shift register got shifted out and UCAxTXBUF is empty.
-    while (!(device->uart->IFG & UCTXIFG));
+    while (!(device->uart->IFG & EUSCI_A_IFG_TXIFG));
 
     // send ch character to uart
     // TXBUF register
@@ -168,5 +168,5 @@ bool_t uart_peek(uart_t id)
     const UART_Device* device = &uart_devices[id];
 
     // Check the UART flag
-    return (device->uart->IFG & UCRXIFG) != 0;
+    return (device->uart->IFG & EUSCI_A_IFG_RXIFG) != 0;
 }

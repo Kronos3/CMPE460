@@ -14,8 +14,8 @@ extern "C" {
 #ifdef __BCM2835__
 #include <drv/rpi/uart.h>
 #error "uart is not supported on BCM2835 yet!"
-#elif defined(__MSP432P401R__)
-#include <drv/msp432p401r/uart.h>
+#elif defined(__MSP432P4__)
+#include <drv/msp432p4/uart.h>
 #endif
 
 /**

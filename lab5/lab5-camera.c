@@ -1,6 +1,6 @@
 #include <lib/uartlib.h>
 #include <lib/cam.h>
-#include <drv/msp432p401r/switch.h>
+#include <drv/msp432p4/switch.h>
 
 // Buffers to swap between image acquisition and processing
 static CameraLine camera_buf;

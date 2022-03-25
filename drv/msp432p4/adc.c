@@ -8,16 +8,16 @@ void adc_init(void)
 {
     // wait for reference to be idle
     // REF_A->CTL0
-    while(REF_A->CTL0 & REFGENBUSY);
+    while(REF_A->CTL0 & REF_A_CTL0_GENBUSY);
 
     // set reference voltage to 2.5V
     // 1) configure reference for static 2.5V
     // REF_A->CTL0
-    REF_A->CTL0 = REFON | REFTCOFF | REFVSEL_3;
+    REF_A->CTL0 = REF_A_CTL0_ON | REF_A_CTL0_TCOFF | REF_A_CTL0_VSEL_3;
 
     // wait for reference to be idle
     // REF_A->CTL0
-    while ((REF_A->CTL0 & REFGENRDY) == 0);
+    while ((REF_A->CTL0 & REF_A_CTL0_GENRDY) == 0);
 
     // 2) ADC14ENC = 0 to allow programming
     // ADC14->CTL0
@@ -130,7 +130,13 @@ U16 adc_in(void)
     return out;
 }
 
-F64 adc_voltage(U16 adc_i)
+F64 adc_raw_to_voltage(U16 adc_i)
 {
     return ((F64)adc_i / ADC_MAX) * ADC_REF;
+}
+
+U16 adc_voltage_to_raw(F64 voltage)
+{
+    FW_ASSERT(voltage >= 0, (I32)(100 * voltage));
+    return (U16) ((voltage / ADC_REF) * ADC_MAX);
 }

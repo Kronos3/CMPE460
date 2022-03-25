@@ -1,8 +1,8 @@
 #include <lib/uartlib.h>
 #include <drv/tim.h>
 
-#include <drv/msp432p401r/switch.h>
-#include <drv/msp432p401r/led.h>
+#include <drv/msp432p4/switch.h>
+#include <drv/msp432p4/led.h>
 
 // Override the weak reference default handler
 static U32 timer_counter_ms = 0;

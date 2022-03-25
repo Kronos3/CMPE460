@@ -1,7 +1,7 @@
 #include <lib/dc.h>
 #include <drv/uart.h>
 #include <drv/tim.h>
-#include <drv/msp432p401r/switch.h>
+#include <drv/msp432p4/switch.h>
 #include <instr.h>
 
 static enum {

@@ -36,7 +36,7 @@ void i2c_init(U32 baud_rate)
 
     // make sure module is disabled (in reset mode)
     // EUSCI_B0->CTLW0
-    EUSCI_B0->CTLW0 = UCSWRST;
+    EUSCI_B0->CTLW0 = EUSCI_B_CTLW0_SWRST;
 
     // set appropriate Port.Pins for SDA/SCL
     // UCB0SDA is P1.6 on primary function
@@ -81,12 +81,12 @@ void i2c_init(U32 baud_rate)
 
     // MASTER mode
     // I2C mode
-    EUSCI_B0->CTLW0 |= UCMST | UCMODE_3;
+    EUSCI_B0->CTLW0 |= EUSCI_B_CTLW0_MST | EUSCI_B_CTLW0_MODE_3;
 
     // SMCLK mode
     // don/t acknowledge
     // MASTER
-    EUSCI_B0->CTLW0 |= UCSSEL_3 | UCTR;
+    EUSCI_B0->CTLW0 |= EUSCI_B_CTLW0_UCSSEL_3 | EUSCI_B_CTLW0_TR;
 
     // ack normal
     // no STOP
@@ -100,7 +100,7 @@ void i2c_init(U32 baud_rate)
 
     // release reset
     // EUSCI_B0->CTLW0
-    EUSCI_B0->CTLW0 &= ~UCSWRST;
+    EUSCI_B0->CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
 }
 
 void i2c_set_address(U8 slave_address)
@@ -118,7 +118,7 @@ static void i2c_putc(U8 ch)
 
     // wait until byte is transmitted
     // EUSCI_B0->IFG
-    while (!(EUSCI_B0->IFG & UCTXIFG0));
+    while (!(EUSCI_B0->IFG & EUSCI_B_IFG_TXIFG0));
 }
 
 void i2c_write(const U8* data, U32 len)
@@ -127,19 +127,19 @@ void i2c_write(const U8* data, U32 len)
 
     // enable i2c module, (remove from RESET)
     // EUSCI_B0->CTLW0
-    EUSCI_B0->CTLW0 &= ~UCSWRST;
+    EUSCI_B0->CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
 
     // Wait to not be busy
-    while(EUSCI_B0->STATW & UCBBUSY);
+    while(EUSCI_B0->STATW & EUSCI_B_STATW_BBUSY);
 
     // generate start condition and wait for the bus
     // EUSCI_B0->CTLW0
-    EUSCI_B0->CTLW0 |= UCTXSTT;
+    EUSCI_B0->CTLW0 |= EUSCI_B_CTLW0_TXSTT;
 
     // BIT1 of IFG reg is 0 until character has been transmitted, then changes to 1
     // wait until it changes
     // EUSCI_B0->IFG
-    while (!(EUSCI_B0->IFG & UCTXIFG0));
+    while (!(EUSCI_B0->IFG & EUSCI_B_IFG_TXIFG0));
 
     // write data byte by byte to i2c, use putchar
     for (U32 i = 0; i < len; i++)
@@ -149,16 +149,16 @@ void i2c_write(const U8* data, U32 len)
 
     // force stop
     // EUSCI_B0->CTLW0;
-    EUSCI_B0->CTLW0 |= UCTXSTP;
+    EUSCI_B0->CTLW0 |= EUSCI_B_CTLW0_TXSTP;
 
     // wait for transmission to complete
     // EUSCI_B0->IFG
-    while (!(EUSCI_B0->IFG & UCSTPIFG));
+    while (!(EUSCI_B0->IFG & EUSCI_B_IFG_STPIFG));
 
     // Clear stop signal
-    EUSCI_B0->IFG &= ~UCSTPIFG;
+    EUSCI_B0->IFG &= ~EUSCI_B_IFG_STPIFG;
 
     // transmission completed, disable the module (put it back in reset)
     //EUSCI_B0->CTLW0
-    EUSCI_B0->CTLW0 |= UCSWRST;
+    EUSCI_B0->CTLW0 |= EUSCI_B_CTLW0_SWRST;
 }

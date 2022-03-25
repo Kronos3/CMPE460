@@ -27,7 +27,8 @@ U16 adc_in(void);
  * @param adc_i adc reading from adc_in()
  * @return voltage from 0-2.5V (ref)
  */
-F64 adc_voltage(U16 adc_i);
+F64 adc_raw_to_voltage(U16 adc_i);
+U16 adc_voltage_to_raw(F64 voltage);
 
 #ifdef __cplusplus
 }

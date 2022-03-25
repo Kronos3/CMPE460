@@ -1,5 +1,4 @@
 set(PLATFORM_PATH ${CMAKE_CURRENT_LIST_DIR})
-set(LINKER_SCRIPT ${PLATFORM_PATH}/msp432p401r.lds)
 
 set(SDK_PATH /opt/ti/simplelink_msp432p4_sdk_3_40_01_02/)
 
@@ -20,10 +19,15 @@ include_directories(
         ${PLATFORM_PATH}/include/sys/msp
 )
 
+string(TOUPPER ${PLATFORM} PLATFORM_DEF)
+string(TOUPPER ${BOARD} BOARD_DEF)
+
 add_compile_definitions(
-        __MSP432P401R__
-        DeviceFamily_MSP432P401x
+        __${PLATFORM_DEF}__
+        __${BOARD_DEF}__
 )
+
+set(LINKER_SCRIPT ${PLATFORM_PATH}/${BOARD}.lds)
 
 add_compile_options(
         -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -52,8 +56,8 @@ function(build_elf NAME)
             ${NAME}
             ${SOURCES}
             ${LINKER_SCRIPT}
-            ${PLATFORM_PATH}/startup_msp432p401r_gcc.c
-            ${PLATFORM_PATH}/system_msp432p401r.c
+            ${PLATFORM_PATH}/startup_${BOARD}_gcc.c
+            ${PLATFORM_PATH}/system_${BOARD}.c
             ${PROJECT_SOURCE_DIR}/common/fw.c
             ${PLATFORM_PATH}/syscalls.c
     )

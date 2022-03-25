@@ -1,4 +1,4 @@
-#include <drv/msp432p401r/switch.h>
+#include <drv/msp432p4/switch.h>
 #include <msp432.h>
 #include <nvic.h>
 #include <instr.h>

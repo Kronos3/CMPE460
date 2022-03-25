@@ -1,5 +1,5 @@
 #include <drv/uart.h>
-#include <drv/msp432p401r/pwm.h>
+#include <drv/msp432p4/pwm.h>
 #include <stdlib.h>
 #include <drv/pwm.h>
 

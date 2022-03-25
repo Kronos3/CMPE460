@@ -9,7 +9,7 @@ All rights reserved.
 */
 
 #include <drv/uart.h>
-#include <drv/msp432p401r/led.h>
+#include <drv/msp432p4/led.h>
 
 #define BAUD_RATE 9600
 

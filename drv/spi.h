@@ -13,9 +13,9 @@ extern "C" {
 
 #ifdef __BCM2835__
 #include "rpi/spi.h"
-#elif defined(__MSP432P401R__)
-//#include "msp432p401r/spi.h"
-#error "SPI not supported on __MSP432P401R__ yet!"
+#elif defined(__MSP432P4__)
+//#include "msp432p4/spi.h"
+#error "SPI not supported on __MSP432P4__ yet!"
 #endif
 
 /**

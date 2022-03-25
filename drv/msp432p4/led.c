@@ -1,5 +1,5 @@
 #include <msp.h>
-#include <drv/msp432p401r/led.h>
+#include <drv/msp432p4/led.h>
 
 // LED1 is on pin 1.0
 #define LED1 (P1)

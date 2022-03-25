@@ -15,8 +15,8 @@ extern "C" {
 
 #ifdef __RPI_ZERO__
 #include "rpi_zero/pwm.h"
-#elif defined(__MSP432P401R__)
-#include "msp432p401r/pwm.h"
+#elif defined(__MSP432P4__)
+#include "msp432p4/pwm.h"
 #endif
 
 /**
