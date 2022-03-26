@@ -175,8 +175,11 @@ void cam_irq(void)
 void cam_sample(CameraLine* dest, GblReply reply)
 {
     // Make sure there is no running request
-    FW_ASSERT(cam_request.state == CAM_IDLE && "Running camera request",
-              cam_request.state, cam_request.i);
+    if (cam_request.state != CAM_IDLE)
+    {
+        // Drop the frame
+        return;
+    }
 
     // Place the camera request in a start configuration
     cam_request.output_buffer = dest;

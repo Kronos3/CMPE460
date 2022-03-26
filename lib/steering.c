@@ -19,6 +19,12 @@ void steering_start(void)
     steering_set(0.0);
 }
 
+void steering_stop(void)
+{
+    steering_set(0.0);
+    pwm_stop(steering_params.servo_pin);
+}
+
 void steering_set(F64 position)
 {
     // Clamp the values to the minimum and maximum
@@ -31,7 +37,7 @@ void steering_set(F64 position)
     F64 duty;
     if (steering_params.left_pwm < steering_params.right_pwm)
     {
-        duty = position_normal * pwm_range + steering_params.left_pwm;
+        duty = position_normal * pwm_range + steering_params.right_pwm;
 
         // Clamp this duty cycle
         duty = FW_MIN(duty, steering_params.right_pwm);
@@ -39,7 +45,7 @@ void steering_set(F64 position)
     }
     else
     {
-        duty = position_normal * pwm_range + steering_params.right_pwm;
+        duty = position_normal * pwm_range + steering_params.left_pwm;
 
         // Clamp this duty cycle
         duty = FW_MIN(duty, steering_params.left_pwm);

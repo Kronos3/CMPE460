@@ -30,7 +30,10 @@ add_compile_definitions(
 set(LINKER_SCRIPT ${PLATFORM_PATH}/${BOARD}.lds)
 
 add_compile_options(
-        -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
+        -mthumb
+        -mcpu=cortex-m4
+        -march=armv7e-m
+        -mfloat-abi=hard -mfpu=fpv4-sp-d16
         -ffunction-sections
         -fdata-sections
         -g
@@ -42,6 +45,7 @@ link_directories(${SDK_PATH}/source)
 
 add_link_options(
         -Wl,-T,${LINKER_SCRIPT}
+        -march=armv7e-m
         -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
         -static
         -Wl,--gc-sections

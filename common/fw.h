@@ -73,8 +73,8 @@ typedef enum
 } bool_t;
 
 #define FW_ABS(x) ((x) < 0) ? (-(x)) : (x)
-#define FW_MIN(a, b) ((a) < (b)) ? (a) : (b)
-#define FW_MAX(a, b) ((a) > (b)) ? (a) : (b)
+#define FW_MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define FW_MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 /**
  * Handle assertion failures

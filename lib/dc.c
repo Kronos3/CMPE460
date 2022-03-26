@@ -22,6 +22,8 @@ void dc_init(void)
     {
         if (configured[dc])
         {
+            gpio_init(dc_profiles[dc].enable, GPIO_FUNCTION_GENERAL);
+            gpio_options(dc_profiles[dc].enable, GPIO_OPTIONS_DIRECTION_OUTPUT | GPIO_OPTIONS_HIGH_DRIVE_STRENGTH);
             pwm_init(dc_profiles[dc].forward, dc_profiles[dc].base_frequency);
             pwm_init(dc_profiles[dc].backward, dc_profiles[dc].base_frequency);
         }
@@ -32,15 +34,32 @@ void dc_init(void)
 
 void dc_start(void)
 {
-    FW_ASSERT(dc_inited && "You need to run dc_init() before dc_set()");
+    FW_ASSERT(dc_inited && "You need to run dc_init()");
 
     for (dc_t dc = DC_0; dc < DC_N; dc++)
     {
         if (configured[dc])
         {
             dc_set(dc, 0.0);
+            gpio_output(dc_profiles[dc].enable, TRUE);
             pwm_start(dc_profiles[dc].forward);
             pwm_start(dc_profiles[dc].backward);
+        }
+    }
+}
+
+void dc_stop(void)
+{
+    FW_ASSERT(dc_inited && "You need to run dc_init()");
+
+    for (dc_t dc = DC_0; dc < DC_N; dc++)
+    {
+        if (configured[dc])
+        {
+            dc_set(dc, 0.0);
+            gpio_output(dc_profiles[dc].enable, FALSE);
+            pwm_stop(dc_profiles[dc].forward);
+            pwm_stop(dc_profiles[dc].backward);
         }
     }
 }

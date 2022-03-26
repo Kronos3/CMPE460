@@ -1,4 +1,5 @@
 #include <drv/i2c.h>
+#include <drv/gpio.h>
 #include "msp.h"
 
 /*
@@ -14,8 +15,8 @@
  */
 
 
-#define SDA BIT(6)
-#define SCL BIT(7)
+static GpioPin sda = GPIO_PIN(1, 6);
+static GpioPin scl = GPIO_PIN(1, 7);
 
 // This function writes the RECEIVER address to the i2c bus.
 // If a RECEIVER chip is at that address, it should respond to
@@ -41,8 +42,8 @@ void i2c_init(U32 baud_rate)
     // set appropriate Port.Pins for SDA/SCL
     // UCB0SDA is P1.6 on primary function
     // UCB0SCL is P1.7 on primary function
-    P1->SEL0 |= SDA | SCL;
-    P1->SEL1 &= ~(SDA | SCL);
+    gpio_init(sda, GPIO_FUNCTION_PRIMARY);
+    gpio_init(scl, GPIO_FUNCTION_PRIMARY);
 
     // configure EUSCI_B0->CTLW0 for:
 

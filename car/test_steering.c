@@ -7,14 +7,14 @@
 int main()
 {
     SteeringParams steering = {
-            // P2.4
+            // P5.6
             .servo_pin={
-                    MSP432_PWM_0,
+                    MSP432_PWM_2,
                     MSP432_PWM_PIN_1
             },
             .servo_pwm_freq=SERVO_FREQ,
-            .left_pwm=0.035,
-            .right_pwm=0.10
+            .left_pwm=0.11,
+            .right_pwm=0.04
     };
 
     uart_init(UART_USB, 115200);

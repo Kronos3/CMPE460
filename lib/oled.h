@@ -56,6 +56,7 @@ void oled_clear(OLEDCanvas canvas);
  * @param camera_in_array camera data canvas
  */
 void oled_camera_to_oled(OLEDCanvas canvas, const U16* camera_in_array);
+void oled_floating_to_oled(OLEDCanvas canvas, const F64* array, F64 offset, U32 n);
 
 /**
  * Draw an OLED canvas to the device via I2C

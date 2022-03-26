@@ -236,7 +236,7 @@ typedef enum IRQn
 #endif
 
 /* System Header */
-#include "system_msp432p4.h"
+#include "system_msp432p401r.h"
 
 /******************************************************************************
 * Definition of standard bits                                                 *

@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string.h>
 #include "math.h"
 
 void math_cast(F64* dest, const U16* src, U32 n)
@@ -22,6 +23,8 @@ void math_convolve(
     FW_ASSERT(x_n);
     FW_ASSERT(h_n);
 
+    memset(y, 0, MATH_CONVOLVE_N(x_n, h_n) * sizeof(F64));
+
     I32 i, j, h_start, x_start, x_end;
     for (i = 0; i < MATH_CONVOLVE_N(x_n, h_n); i++)
     {
@@ -38,7 +41,7 @@ void math_convolve(
 static F64 gaussian_1d(I32 x, F64 sigma)
 {
     F64 coeff = 1.0 / (sqrt(2.0 * M_PI) * sigma);
-    F64 p = pow(M_E, (-x*x) / (2 * sigma * sigma));
+    F64 p = pow(M_E, (-x * x) / (2 * sigma * sigma));
     return coeff * p;
 }
 
@@ -46,7 +49,7 @@ void math_gaussian_smoothing(F64 y[], U32 n, F64 sigma)
 {
     FW_ASSERT(y);
     FW_ASSERT(n % 2 == 1, n); // make sure n is odd
-    I32 s = (I32)n / 2;
+    I32 s = (I32) n / 2;
 
     for (I32 i = 0; i < n; i++)
     {
@@ -66,6 +69,13 @@ void math_threshold(U8 y[], const F64 x[], F64 threshold, U32 n)
 {
     for (U32 i = 0; i < n; i++)
     {
-        y[i] = x[i] >= threshold;
+        if (x[i] >= 0)
+        {
+            y[i] = x[i] >= threshold;
+        }
+        else
+        {
+            y[i] = x[i] <= -threshold;
+        }
     }
 }

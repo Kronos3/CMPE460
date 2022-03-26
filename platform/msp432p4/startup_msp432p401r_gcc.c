@@ -37,7 +37,7 @@
 #include <stdint.h>
 
 /* Entry point for the application. */
-extern int _mainCRTStartup();
+extern int main();
 
 /* External declaration for system initialization function                  */
 extern void SystemInit(void);
@@ -192,11 +192,23 @@ void Reset_Handler(void)
         *pui32Dest++ = *pui32Src++;
     }
 
+    /* clear BSS section */
+    extern uint32_t __bss_start__;
+    extern uint32_t __bss_end__;
+
+    uint32_t* dst = &__bss_start__;
+
+    while (dst < &__bss_end__) {
+        *dst++ = 0;
+    }
+
     /* Call system initialization routine */
     SystemInit();
 
     /* Jump to the main initialization routine. */
-    _mainCRTStartup();
+    main();
+
+    while(1);
 }
 
 /* This is the code that gets called when the processor receives an unexpected  */

@@ -21,6 +21,7 @@ gen_library(steering steering.c steering.h)
 target_link_libraries(steering pwm)
 
 gen_library(math math.c math.h)
+target_link_libraries(math m)
 
-gen_library(drive drive.c drive.h)
-target_link_libraries(drive dc math steering cam gbl)
+gen_library(drive drive.c drive_math.c drive.h)
+target_link_libraries(drive dc oled math steering cam gbl)

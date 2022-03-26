@@ -56,6 +56,12 @@ static inline void uart_put_dec(
 
 static inline void uart_put_floating(uart_t uart, double f)
 {
+    if (f < 0)
+    {
+        uart_putchar(uart, '-');
+        f = -f;
+    }
+
     uart_put_dec(uart, (int) f, '0', 0);
     f -= (int) f;
 
@@ -164,4 +170,54 @@ int ufprintf(uart_t uart, const char* fmt, ...)
     I32 out = uvfprintf(uart, fmt, args);
     va_end(args);
     return out;
+}
+
+void udebug_dump(const void* data, debug_t type, U32 screen_n, U32 n)
+{
+    I8* data_8 = (I8*) data;
+    I16* data_16 = (I16*) data;
+    I32* data_32 = (I32*) data;
+    F64* data_f64 = (F64*) data;
+
+    for (U32 i = 0; i < n; i++)
+    {
+        if (i && i % screen_n == 0)
+        {
+            uart_put(UART_IO, ", ...\r\n");
+        }
+        else if (i)
+        {
+            uart_put(UART_IO, ", ");
+        }
+
+        // Checking the type is slightly slower but way cleaner
+        switch(type)
+        {
+            case DEBUG_HEX_16:
+                uart_put_hex(UART_IO, data_16[i], TRUE);
+                break;
+            case DEBUG_HEX_32:
+                uart_put_hex(UART_IO, data_32[i], TRUE);
+                break;
+            case DEBUG_DEC_16:
+                uart_put_dec(UART_IO, data_16[i], ' ', 0);
+                break;
+            case DEBUG_DEC_8:
+                uart_put_dec(UART_IO, data_8[i], ' ', 0);
+                break;
+            case DEBUG_DEC_32:
+                uart_put_dec(UART_IO, data_32[i], ' ', 0);
+                break;
+            case DEBUG_FLOAT_LARGE:
+                uart_put_dec(UART_IO, (I32)data_f64[i], ' ', 0);
+                break;
+            case DEBUG_FLOAT_SMALL:
+                uart_put_floating(UART_IO, data_f64[i]);
+                break;
+            default:
+                FW_ASSERT(0 && "Invalid debug type", type);
+        }
+    }
+
+    uprintf("\r\n");
 }

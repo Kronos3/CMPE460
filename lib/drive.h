@@ -22,7 +22,8 @@ typedef struct
     dc_t right;                     //!< Right DC motor ID
     drive_algorithm_t algorithm;    //!< Driving algorithm
     F64 smoothing_sigma;            //!< Gaussian sigma for smoothing
-    F64 derivative_threshold;       //!< Threshold on the edge detection
+    F64 edge_threshold;             //!< Threshold on the edge detection
+//    I32 center;                     //!< Camera center index (car frame)
     union {
         struct {
             // Bang bang is essentially a P-controller meaning
@@ -32,7 +33,9 @@ typedef struct
             // speed until no edges are detected. When no edges are
             // detected the car will stop.
             F64 throttle;           //!< Bang Bang! runs at a constant speed (keep this nice and low)
-            F64 turning_factor;     //!< Constant factor to turn by depending on distance to edge
+            F64 turning_factor;   //!< Constant factor to turn by depending on distance to edge
+//            F64 turning_factor_l;   //!< Constant factor to turn by depending on distance to edge
+//            F64 turning_factor_r;   //!< Constant factor to turn by depending on distance to edge
         } bang_bang;
         struct {
             F64 kp;                 //!< PID proportional factor

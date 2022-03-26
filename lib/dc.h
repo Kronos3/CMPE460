@@ -23,6 +23,7 @@ typedef struct
 {
     PwmPin forward;
     PwmPin backward;
+    GpioPin enable;
     F64 base_frequency;
 } DcParam;
 
@@ -44,6 +45,7 @@ void dc_init(void);
  * Start pwm running the configured dc motors
  */
 void dc_start(void);
+void dc_stop(void);
 
 /**
  * Run a motor at a certain speed

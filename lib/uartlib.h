@@ -21,6 +21,19 @@ I32 uvfprintf(
         const char* format,
         va_list args);
 
+typedef enum
+{
+    DEBUG_HEX_16,
+    DEBUG_HEX_32,
+    DEBUG_DEC_8,
+    DEBUG_DEC_16,
+    DEBUG_DEC_32,
+    DEBUG_FLOAT_LARGE,
+    DEBUG_FLOAT_SMALL,
+} debug_t;
+
+void udebug_dump(const void* data, debug_t type, U32 screen_n, U32 n);
+
 #ifdef __cplusplus
 }
 #endif

@@ -27,5 +27,6 @@ void steering_set(F64 position);
  * Aligns the steering to center
  */
 void steering_start(void);
+void steering_stop(void);
 
 #endif //CMPE460_STEERING_H
