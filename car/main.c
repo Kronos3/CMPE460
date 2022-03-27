@@ -39,7 +39,7 @@ typedef struct
     DriveParams drive;
 } CarParams;
 
-static const CarParams main_params = {
+static const CarParams params = {
         .left = {
                 // P2.4
                 .backward={
@@ -105,31 +105,31 @@ static const CarParams main_params = {
         }
 };
 
-void car_init(const CarParams* params)
+void car_init(void)
 {
-    dc_cfg(DC_0, &params->left);
-    dc_cfg(DC_1, &params->right);
+    dc_cfg(DC_0, &params.left);
+    dc_cfg(DC_1, &params.right);
 
     // Initialize the motors
     dc_init();
-    steering_init(&params->steering);
+    steering_init(&params.steering);
 
     // Initialize the control GPIO pins to general purpose
-    gpio_init(params->cam.clk, GPIO_FUNCTION_GENERAL);
-    gpio_init(params->cam.si, GPIO_FUNCTION_GENERAL);
+    gpio_init(params.cam.clk, GPIO_FUNCTION_GENERAL);
+    gpio_init(params.cam.si, GPIO_FUNCTION_GENERAL);
 
     // Both of these control pins are output pins
-    gpio_options(params->cam.clk, GPIO_OPTIONS_DIRECTION_OUTPUT);
-    gpio_options(params->cam.si, GPIO_OPTIONS_DIRECTION_OUTPUT);
+    gpio_options(params.cam.clk, GPIO_OPTIONS_DIRECTION_OUTPUT);
+    gpio_options(params.cam.si, GPIO_OPTIONS_DIRECTION_OUTPUT);
 
-    cam_init(params->cam.clk, params->cam.si, params->cam.clk_timer);
+    cam_init(params.cam.clk, params.cam.si, params.cam.clk_timer);
 
     cam_process(&camera_buf,
-                main_params.cam.exposure_time,
-                main_params.cam.exposure_timer,
+                params.cam.exposure_time,
+                params.cam.exposure_timer,
                 gbl_reply_init(drive_image_ready, 1, &camera_buf));
 
-    drive_init(&params->drive);
+    drive_init(&params.drive);
 }
 
 static bool_t car_running = FALSE;

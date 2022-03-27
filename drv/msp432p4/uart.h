@@ -3,7 +3,7 @@
 
 typedef enum {
     UART_USB,
-    UART_BT,
+    UART_GPIO,
     UART_INVALID,
 } uart_t;
 
