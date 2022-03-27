@@ -10,7 +10,6 @@
 #define PROCESS_FRAME_N MATH_CONVOLVE_N(CAMERA_BUF_N, DRIVE_SMOOTHING_LENGTH)
 #define CUT_FRAME_N (PROCESS_FRAME_N - CUT_LEFT - CUT_RIGHT)
 #define DERIV_FRAME_N MATH_CONVOLVE_N(CUT_FRAME_N, 2)
-#define SMOOTH_DERIV_FRAME_N MATH_CONVOLVE_N(DERIV_FRAME_N, DRIVE_SMOOTHING_LENGTH)
 
 static F64 gaussian_normalize[1] = {1.0 / (1 << 14)};
 static F64 gaussian_smooth[DRIVE_SMOOTHING_LENGTH];
@@ -18,10 +17,6 @@ static F64 gaussian_derivative[2] = {1, -1}; // dx = F[x] - F[x-1]
 
 static F64 buf1[140];
 static F64 buf2[140];
-static F64 buf3[140];
-
-//#define FINAL_LENGTH DERIV_FRAME_N
-//static U8 threshold_frame[FINAL_LENGTH];
 
 static OLEDCanvas canvas;
 
