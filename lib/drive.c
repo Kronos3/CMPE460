@@ -5,6 +5,7 @@
 #include <lib/drive.h>
 #include <instr.h>
 #include "uartlib.h"
+#include "drive_math.h"
 
 static bool_t drive_params_init = FALSE;
 static U32 drive_drop_frames = 10;   // drop first 10 frames
@@ -42,6 +43,8 @@ void drive_init(const DriveParams* params)
 
     drive_params = *params;
     drive_params_init = TRUE;
+
+    drive_math_init(&drive_params);
 }
 
 static CameraLine* drive_next_frame(void)
@@ -59,31 +62,51 @@ static CameraLine* drive_next_frame(void)
 }
 
 static drive_state_t
-drive_bang_bang_main(F64 edge_distance)
+drive_bang_bang_main(F64 edge_distance, const U16* raw_frame)
 {
-    // Distance closeness is a number between 0 and 1.0
-    // 0 is the closest to the center of the camera frame
-    // 1 is the furthest away
-    // We need to turn more or less depending on how close we are
-    F64 turn_amount = edge_distance *
-            (turn_left ?
-                drive_params.algorithm_params.bang_bang.turning_factor_l :
-                drive_params.algorithm_params.bang_bang.turning_factor_r);
+    static F64 turn_amount = 0;
+    if (edge_distance == -2)
+    {
+        U32 sum = 0;
+        for (U32 i = 0; i < CAMERA_BUF_N; i++)
+        {
+            sum += raw_frame[i];
+        }
 
-    F64 steering_out = turn_left ? -turn_amount : turn_amount;
+        uprintf("average: %d\r\n", sum / CAMERA_BUF_N);
 
-    uprintf("\rEdges=%d, left=%f, right=%f, steering=%f", edges->edges, edges->left, edges->right, turn_amount);
+        if (sum / CAMERA_BUF_N < drive_params.algorithm_params.bang_bang.carpet_thresh)
+        {
+            static U32 carpet_frame = 0;
+            if (++carpet_frame >= drive_params.algorithm_params.bang_bang.stop_frames)
+                return DRIVE_FINISHED;
+        }
+        else
+        {
+            // Leave turn amount unchanged from last frame
+        }
+    }
+    else if (edge_distance < 0)
+    {
+        turn_amount = -1 - edge_distance;
+    }
+    else
+    {
+        turn_amount = 1 - edge_distance;
+    }
+
+    uprintf("\r%f", turn_amount);
 
     // Driving at a constant speed for bang bang
     drive_set(drive_params.algorithm_params.bang_bang.throttle,
               drive_params.algorithm_params.bang_bang.throttle,
-              steering_out);
+              (-turn_amount) * drive_params.algorithm_params.bang_bang.turning_factor);
 
     return DRIVE_RUNNING;
 }
 
 static drive_state_t
-drive_pid_main(const FrameEdge* edges)
+drive_pid_main(F64 edge)
 {
     FW_ASSERT(0 && "Not implemented yet!");
 }
@@ -99,18 +122,15 @@ drive_state_t drive_main(void)
         const CameraLine* raw_frame = drive_next_frame();
 
         // Process the raw frame to detect edges
-        const U8* edges_frame = drive_process_frame(raw_frame);
-
-        // Find the position of the inner two edges
-        FrameEdge edges = drive_edge_find(edges_frame);
+        F64 edge = drive_process_frame(&drive_params, raw_frame);
 
         switch(drive_params.algorithm)
         {
             case DRIVE_BANG_BANG:
-                state = drive_bang_bang_main(&edges);
+                state = drive_bang_bang_main(edge, raw_frame->data);
                 break;
             case DRIVE_PID:
-                state = drive_pid_main(&edges);
+                state = drive_pid_main(edge);
                 break;
             default:
                 FW_ASSERT(0 && "Invalid algorithm", drive_params.algorithm);

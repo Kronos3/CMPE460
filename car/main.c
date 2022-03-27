@@ -90,12 +90,14 @@ static const CarParams main_params = {
         .drive = {
                 .algorithm_params = {
                         .bang_bang.throttle = 0.25,
-                        .bang_bang.turning_factor = 1,
+                        .bang_bang.turning_factor = 2,
+                        .bang_bang.carpet_thresh = 3000,
+                        .bang_bang.stop_frames = 10,
 //                        .bang_bang.turning_factor_l = 1,
 //                        .bang_bang.turning_factor_r = 1,
                 },
-                .left = DC_0,
-                .right = DC_1,
+                .left = DC_1,
+                .right = DC_0,
                 .algorithm = DRIVE_BANG_BANG,
                 .edge_threshold = 0.5,
                 .smoothing_sigma = 2,
@@ -143,6 +145,7 @@ void car_toggle()
     }
     else
     {
+        steering_set(0.0);
         dc_stop();
         steering_stop();
 

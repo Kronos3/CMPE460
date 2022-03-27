@@ -32,8 +32,10 @@ typedef struct
             // This algorithm will run the DC motors at a constant
             // speed until no edges are detected. When no edges are
             // detected the car will stop.
-            F64 throttle;           //!< Bang Bang! runs at a constant speed (keep this nice and low)
-            F64 turning_factor;   //!< Constant factor to turn by depending on distance to edge
+            F64 throttle;             //!< Bang Bang! runs at a constant speed (keep this nice and low)
+            F64 turning_factor;       //!< Constant factor to turn by depending on distance to edge
+            U32 carpet_thresh;        //!<
+            U32 stop_frames;        //!<
 //            F64 turning_factor_l;   //!< Constant factor to turn by depending on distance to edge
 //            F64 turning_factor_r;   //!< Constant factor to turn by depending on distance to edge
         } bang_bang;
