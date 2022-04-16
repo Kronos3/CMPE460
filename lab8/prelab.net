@@ -1,0 +1,16 @@
+* Z:\home\tumbar\git\CMPE460\lab8\prelab.asc
+C1 HPF N001 {Ch}
+C2 0 LPF {Cl}
+R1 HPF 0 {Rh}
+R2 LPF HPF {Rl}
+V1 N001 0 AC 1 0
+XU1 LPF N002 N003 0 OUT level1 Avol=1Meg GBW=10Meg Vos=0 En=0 Enk=0 In=0 Ink=0 Rin=500Meg
+R3 OUT N002 {R1}
+R4 N002 0 {R2}
+V2 N003 0 5
+.param Ch=47u Rh=6.7k Rl=2k Cl=47u
+.param R1=390k R2=1k
+.ac dec 1000 0.01 20
+.lib UniversalOpAmp1.lib
+.backanno
+.end

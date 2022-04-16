@@ -4,27 +4,38 @@
 #include <drv/uart.h>
 #include <lib/uartlib.h>
 #include <drv/msp432p4/switch.h>
-#include <lib/math.h>
 
 // Samples per second
-#define SAMPLE_PS (20)
+#define SAMPLE_PS (100)
 
 // Sampling time
-#define SAMPLE_S (4)
+#define SAMPLE_S (5)
 
 #define SAMPLE_N (SAMPLE_PS * SAMPLE_S)
 
 #define TRIGGER_TIMER (TIM32_1)
 
-#define THRESHOLD_V (2.0)
+#define THRESH_HIGH_V (1.5)
+#define THRESH_LOW_V (0.5)
+
+typedef enum
+{
+    ACTION_GO_LOW,
+    ACTION_GO_HIGH,
+    ACTION_STAY,
+} action_t;
+
+typedef enum
+{
+    STATE_UNKNOWN = -1,
+    STATE_LOW = 0,
+    STATE_HIGH = 1
+} state_t;
 
 static U16 sample_buf[SAMPLE_N];
 static U32 sample_i = 0;
 static bool_t timer_running = FALSE;
 static bool_t sample_ready = FALSE;
-
-static F64 sample_converted[SAMPLE_N];
-static U8 thresh[SAMPLE_N];
 
 void get_sample(void)
 {
@@ -42,13 +53,36 @@ void get_sample(void)
     }
 }
 
+action_t get_action(U16 sample)
+{
+    static U16 high_adc = 0, low_adc = 0;
+    if (!high_adc || !low_adc)
+    {
+        high_adc = adc_voltage_to_raw(THRESH_HIGH_V);
+        low_adc = adc_voltage_to_raw(THRESH_LOW_V);
+    }
+
+    if (sample >= high_adc)
+    {
+        return ACTION_GO_HIGH;
+    }
+    else if (sample <= low_adc)
+    {
+        return ACTION_GO_LOW;
+    }
+    else
+    {
+        return ACTION_STAY;
+    }
+}
+
 void toggle_timer(void)
 {
     if (sample_ready)
     {
         // The sample has not been processed yet!
-        // It is not safe to start or stop the timer
-
+        // It is not safe to start or stop the time
+        return;
     }
 
     if (!timer_running)
@@ -59,19 +93,33 @@ void toggle_timer(void)
     }
 }
 
-void stats_distance_between_edges(const U8 buffer[SAMPLE_N])
+void stats_distance_between_edges(const U16 buffer[SAMPLE_N])
 {
     F64 distance_sum = 0;
     U32 num_n = 0;
     I32 last_edge = -1;
-    bool_t in_high = FALSE;
+
+    state_t current_state = STATE_UNKNOWN;
 
     for (U32 i = 0; i < SAMPLE_N; i++)
     {
-        if (buffer[i] && !in_high)
+        state_t last_state = current_state;
+        switch(get_action(buffer[i]))
         {
-            in_high = TRUE;
+            case ACTION_GO_LOW:
+                current_state = STATE_LOW;
+                break;
+            case ACTION_GO_HIGH:
+                current_state = STATE_HIGH;
+                break;
+            case ACTION_STAY:
+                current_state = last_state;
+                break;
+        }
 
+        // Check for rising edge
+        if (last_state == STATE_LOW && current_state == STATE_HIGH)
+        {
             // Check if there was an edge already detected
             if (last_edge >= 0)
             {
@@ -80,10 +128,6 @@ void stats_distance_between_edges(const U8 buffer[SAMPLE_N])
             }
 
             last_edge = (I32)i;
-        }
-        else
-        {
-            in_high = FALSE;
         }
     }
 
@@ -99,7 +143,7 @@ void stats_distance_between_edges(const U8 buffer[SAMPLE_N])
     F64 hz = SAMPLE_PS / distance_average;
 
     uprintf("Found %d edges in %d seconds\r\n", num_n, SAMPLE_S);
-    uprintf("Average frequency is %f Hz\r\n", hz);
+    uprintf("Average frequency is %f Hz (%f bpm)\r\n", hz, hz * 60.0);
 }
 
 I32 main(void)
@@ -110,20 +154,15 @@ I32 main(void)
     switch_init(SWITCH_ALL, SWITCH_INT_PRESS, toggle_timer);
     tim_init(TRIGGER_TIMER, get_sample, SAMPLE_PS);
 
-    U16 threshold_sample = adc_voltage_to_raw(THRESHOLD_V);
-
     while(1)
     {
         // Wait for a signal
         while (!sample_ready);
 
-        math_cast(sample_converted, sample_buf, SAMPLE_N);
-        math_threshold(thresh, sample_converted, threshold_sample, SAMPLE_N);
-
         // Measure the average distance between edges
-        stats_distance_between_edges(thresh);
+        stats_distance_between_edges(sample_buf);
 
-        // Mark the system as ready to take more measurementsz
+        // Mark the system as ready to take more measurements
         sample_ready = FALSE;
     }
 }
