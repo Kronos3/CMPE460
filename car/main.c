@@ -161,7 +161,7 @@ int main()
     uprintf("Booting\r\n");
     oled_init();
 
-    car_init(&main_params);
+    car_init();
 
     // Wait for the switch to trigger
     switch_init(SWITCH_1, SWITCH_INT_PRESS, car_toggle);
